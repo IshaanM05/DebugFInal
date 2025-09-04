@@ -234,7 +234,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     std::vector<std::vector<double>> clustered_positions, clustered_colors;
     for (const auto& cluster : classified_points) {
         for (const auto& point : cluster) {
-            clustered_positions.push_back({point[0], point[1], point[2]});
+            clustered_positions.push_back({point[0] + 2.921, point[1], point[2]});
             clustered_colors.push_back({1.0, 0.0, 1.0});
         }
     }
@@ -266,9 +266,9 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
                 return a[0] < b[0];
             });
         
-        double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS;
+        double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS + 2.921;
         double cone_y = (*min_x_it)[1];
-        double cone_z = 0.025;
+        double cone_z = 0.1629;
         
         for (auto& pt : class_) {
             intensity_vals.push_back(pt.at(3));
@@ -370,6 +370,64 @@ bool ProcessLidar::classifyCone(const std::vector<double> & y_vals, const std::v
 
     return coeffs(0) > 0;
 }
+
+// bool ProcessLidar::classifyCone(const std::vector<double>& y_vals, const std::vector<double>& x_vals)
+// {
+//     if (y_vals.size() < 2) return false; // IRLS benefits from a few more points
+
+//     int n = y_vals.size();
+//     Eigen::MatrixXd A(n, 3);
+//     Eigen::VectorXd y(n);
+
+//     for (int i = 0; i < n; ++i) {
+//         double x = x_vals.at(i);
+//         A(i, 0) = x * x;
+//         A(i, 1) = x;
+//         A(i, 2) = 1.0;
+//         y(i) = y_vals.at(i);
+//     }
+
+//     // --- Iteratively Reweighted Least Squares (IRLS) Implementation ---
+
+//     // 1. Initial Fit: Perform a standard least-squares fit to get a first guess.
+//     Eigen::Vector3d coeffs = A.colPivHouseholderQr().solve(y);
+
+//     const int num_iterations = 10; // 3 iterations is a good balance of speed and accuracy
+
+//     for (int iter = 0; iter < num_iterations; ++iter) {
+//         // 2. Calculate Residuals: Find the error of each point from the current curve.
+//         Eigen::VectorXd residuals = y - A * coeffs;
+
+//         // 3. Calculate Weights: Down-weight outliers using the Tukey biweight function.
+//         // This is the core of the robust fitting.
+//         Eigen::VectorXd W = Eigen::VectorXd::Zero(n);
+//         double mad = 0; // Median Absolute Deviation
+//         std::vector<double> abs_residuals;
+//         for(int i=0; i<n; ++i) { abs_residuals.push_back(std::abs(residuals(i))); }
+//         std::nth_element(abs_residuals.begin(), abs_residuals.begin() + n / 2, abs_residuals.end());
+//         mad = abs_residuals[n/2];
+        
+//         if (mad < 1e-6) break; // Avoid division by zero if all residuals are zero
+
+//         const double c = 4.685 * mad; // Tukey's tuning constant
+
+//         for (int i = 0; i < n; ++i) {
+//             if (std::abs(residuals(i)) < c) {
+//                 double term = 1 - std::pow(residuals(i) / c, 2);
+//                 W(i) = term * term;
+//             } else {
+//                 W(i) = 0; // Completely reject extreme outliers
+//             }
+//         }
+
+//         // 4. Re-fit: Perform a Weighted Least Squares fit with the new weights.
+//         Eigen::MatrixXd AtW = A.transpose() * W.asDiagonal();
+//         coeffs = (AtW * A).ldlt().solve(AtW * y);
+//     }
+
+//     // 5. Final Classification: Return the curvature of the final, robustly-fitted parabola.
+//     return coeffs(0) > 0;
+// }
 
 std::vector<double> ProcessLidar::movingAverage(const std::vector<double>& data, int kernel)
 {

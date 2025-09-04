@@ -36,12 +36,42 @@ add_executable(process_lidar
 ament_target_dependencies(process_lidar rclcpp sensor_msgs visualization_msgs pcl_conversions)
 target_link_libraries(process_lidar Open3D::Open3D Eigen3::Eigen ${PCL_LIBRARIES}) # As it's not a ros2 package
 
+# --- ADDED: Executable for the new feature extraction node ---
+# --- CHANGE: Added the required main source file for this executable ---
+add_executable(feature_extractor 
+  src/feature_extractor.cpp
+  src/feature_extractor_main.cpp)
+target_include_directories(feature_extractor PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  ${PCL_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
+  ${Open3D_INCLUDE_DIRS}
+)
+ament_target_dependencies(feature_extractor
+  rclcpp
+  sensor_msgs
+  visualization_msgs
+)
+target_link_libraries(feature_extractor
+  ${PCL_LIBRARIES}
+  Open3D::Open3D
+  Eigen3::Eigen
+)
 
-# Install targets section (so that ros2 run can find your nodes)
+
+# Install both targets so ros2 run can find them
 install(TARGETS
   process_lidar
+  feature_extractor # --- ADDED ---
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# --- NOTE: The duplicated install rule below was a bug and has been removed ---
+# Install targets section (so that ros2 run can find your nodes)
+# install(TARGETS
+#   process_lidar
+#   DESTINATION lib/${PROJECT_NAME}
+# )
 
 # Adding other directories
 include_directories(include) # Tells compiler where to look for header files
@@ -59,15 +89,15 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(
-  DIRECTORY custom_track_1
-  DESTINATION share/${PROJECT_NAME}
-)
+# install(
+#   DIRECTORY custom_track_1
+#   DESTINATION share/${PROJECT_NAME}
+# )
 
-install(
-  DIRECTORY TrackDrive
-  DESTINATION share/${PROJECT_NAME}
-)
+# install(
+#   DIRECTORY TrackDrive
+#   DESTINATION share/${PROJECT_NAME}
+# )
 
 # ----------------------------- END -----------------------
 

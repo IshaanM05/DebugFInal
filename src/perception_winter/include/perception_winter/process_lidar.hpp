@@ -21,7 +21,7 @@ class ProcessLidar : public rclcpp::Node {
 private:
   // Constants
   const std::string namespace_ = "process_lidar";
-  const std::string fixed_frame = "Lidar_F"; // Can change this later
+  const std::string fixed_frame = "Fr1A"; // Can change this later
   double dbscan_epsilon = 0.3;
   int dbscan_minpoints = 2;
 
