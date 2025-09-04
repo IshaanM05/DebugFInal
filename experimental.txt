@@ -1,0 +1,682 @@
+/**
+ * @file process_lidar.cpp
+ * @brief Source (Definition / Implementation) file for the node
+ * @author Siddhesh Phadke
+ */
+
+#include "perception_winter/process_lidar.hpp"
+#include <string>
+#include <algorithm>
+#include <cmath>
+#include <optional> // Required for iterative RANSAC
+#include <numeric>  // Required for std::accumulate
+#include <open3d/Open3D.h>
+#include <Eigen/Dense>
+#include <pcl/point_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/extract_indices.h> // Required for iterative RANSAC
+#include <pcl/filters/passthrough.h>       // Required for ROI filtering
+#include <pcl/ModelCoefficients.h>      // Required for iterative RANSAC
+
+// =================================================================================================
+// --- KALMAN FILTER AND TRACKING IMPLEMENTATION ---
+// =================================================================================================
+struct KalmanFilter {
+    Eigen::Vector2d x; // State vector [x, y]
+    Eigen::Matrix2d P; // State covariance matrix
+    Eigen::Matrix2d F; // State transition matrix
+    Eigen::Matrix2d H; // Measurement matrix
+    Eigen::Matrix2d R; // Measurement noise covariance matrix
+    Eigen::Matrix2d Q; // Process noise covariance matrix
+
+    KalmanFilter() {
+        x.setZero();
+        P.setIdentity();
+        F.setIdentity();
+        H.setIdentity();
+        R = Eigen::Matrix2d::Identity() * 0.1; 
+        Q = Eigen::Matrix2d::Identity() * 0.01;
+    }
+
+    void predict() {
+        x = F * x;
+        P = F * P * F.transpose() + Q;
+    }
+
+    void update(const Eigen::Vector2d& z) {
+        Eigen::Vector2d y = z - H * x;
+        Eigen::Matrix2d S = H * P * H.transpose() + R;
+        Eigen::Matrix2d K = P * H.transpose() * S.inverse();
+        x = x + K * y;
+        P = (Eigen::Matrix2d::Identity() - K * H) * P;
+    }
+};
+
+struct ConeTrack {
+    int id;
+    KalmanFilter kf;
+    int age = 1;
+    int hits = 1;
+    int misses = 0;
+    double blue_score = 1.0;
+    double yellow_score = 1.0;
+    std::string color = "UNKNOWN";
+
+    ConeTrack(int track_id, double initial_x, double initial_y) {
+        id = track_id;
+        kf.x << initial_x, initial_y;
+    }
+
+    void update(double new_x, double new_y, const std::string& measured_color) {
+        kf.update(Eigen::Vector2d(new_x, new_y));
+        hits++;
+        misses = 0;
+
+        if (measured_color == "BLUE") {
+            blue_score = blue_score * 0.9 + 1.0 * 0.1;
+            yellow_score = yellow_score * 0.9 + 0.0 * 0.1;
+        } else if (measured_color == "YELLOW") {
+            blue_score = blue_score * 0.9 + 0.0 * 0.1;
+            yellow_score = yellow_score * 0.9 + 1.0 * 0.1;
+        }
+        color = (blue_score > yellow_score) ? "BLUE" : "YELLOW";
+    }
+};
+// =================================================================================================
+
+
+ProcessLidar::ProcessLidar() : Node("process_lidar")
+{
+    // Shout out
+    RCLCPP_INFO(this->get_logger(), "Process Lidar Node started");
+
+    // Initializing
+    this->lidar_raw_input_sub = this->create_subscription<sensor_msgs::msg::PointCloud>(
+        this->lidar_raw_input_topic,
+        10,
+        std::bind(&ProcessLidar::lidar_raw_sub_callback, this, std::placeholders::_1)
+    );
+
+    // For final classified cones
+    this->classified_cones_output_rviz_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+        this->classified_cones_output_rviz_topic,
+        10
+    );
+
+    // Publishers for debugging visualizations
+    this->ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+        this->namespace_ + "/ground_points", 10);
+    this->non_ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+        this->namespace_ + "/non_ground_points", 10);
+    this->clustered_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+        this->namespace_ + "/clustered_points", 10);
+
+
+    // Initialize new RANSAC parameters
+    this->min_z_normal_component = 0.80;
+    this->max_slope_deviation_deg = 10.0;
+
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Constructor finished.");
+}
+
+ProcessLidar::~ProcessLidar()
+{
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Destructor called. Shutting down.");
+}
+
+void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::SharedPtr msg)
+{
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] ---- lidar_raw_sub_callback entered ----");
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Received point cloud with %zu points.", msg->points.size());
+
+    std::vector<std::vector<double>> positions, colors;
+    std::vector<double> intensities;
+
+    auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    cloud->points.reserve(msg->points.size());
+    for (size_t i = 0; i < msg->points.size(); ++i) {
+        const auto& pt = msg->points[i];
+        if (pt.x > 0) {
+            const auto& intensity = msg->channels[0].values[i];
+            pcl::PointXYZI p;
+            p.x = pt.x;
+            p.y = pt.y;
+            p.z = pt.z;
+            p.intensity = intensity;
+            cloud->points.push_back(p);
+        }
+    }
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] After X-filter, cloud size is: %zu", cloud->points.size());
+
+    auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    pcl::PassThrough<pcl::PointXYZI> pass;
+    
+    pass.setInputCloud(cloud);
+    pass.setFilterFieldName("y");
+    pass.setFilterLimits(-3, 3);
+    pass.filter(*cloud_filtered);
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] After Y-filter, cloud size is: %zu", cloud_filtered->points.size());
+
+    pass.setInputCloud(cloud_filtered);
+    pass.setFilterFieldName("z");
+    pass.setFilterLimits(-1.0, 2.0);
+    pass.filter(*cloud_filtered);
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] After Z-filter, cloud size for RANSAC is: %zu", cloud_filtered->points.size());
+
+
+    auto non_ground_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    auto ground_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    auto remaining_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>(*cloud_filtered);
+    
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    pcl::SACSegmentation<pcl::PointXYZI> seg;
+    pcl::ExtractIndices<pcl::PointXYZI> extract;
+
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setDistanceThreshold(this->ransac_threshold);
+
+    int iterations = 0;
+    const int max_iterations = 5;
+    const size_t min_points_for_plane = 350;
+    std::optional<Eigen::Vector3f> reference_normal;
+
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting RANSAC with %zu points.", remaining_cloud->points.size());
+
+    while (remaining_cloud->points.size() > min_points_for_plane && iterations < max_iterations)
+    {
+        // --- DEBUG LOGGER ---
+        RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC Iteration %d...", iterations + 1);
+
+        seg.setInputCloud(remaining_cloud);
+        seg.segment(*inliers, *coefficients);
+
+        if (inliers->indices.empty()) {
+            RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] No more potential ground planes found.");
+            break;
+        }
+
+        Eigen::Vector3f current_normal(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
+        if (current_normal.z() < 0) { current_normal = -current_normal; }
+
+        if (current_normal.z() < this->min_z_normal_component) {
+            RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Plane rejected: too vertical (normal Z=%.2f).", current_normal.z());
+            break;
+        }
+
+        if (!reference_normal.has_value()) {
+            reference_normal = current_normal;
+            RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Acquired reference ground plane normal.");
+        } else {
+            double dot_product = current_normal.dot(reference_normal.value());
+            double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
+            double angle_deg = angle_rad * (180.0 / M_PI);
+            if (angle_deg > this->max_slope_deviation_deg) {
+                RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Plane rejected: slope deviates by %.2f deg.", angle_deg);
+                break;
+            }
+        }
+
+        auto current_ground_plane = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        extract.setInputCloud(remaining_cloud);
+        extract.setIndices(inliers);
+        extract.setNegative(false);
+        extract.filter(*current_ground_plane);
+        *ground_cloud += *current_ground_plane;
+
+        extract.setNegative(true);
+        auto next_remaining_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        extract.filter(*next_remaining_cloud);
+        remaining_cloud = next_remaining_cloud;
+        iterations++;
+    }
+
+    *non_ground_cloud = *remaining_cloud;
+    
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC complete. Ground points: %zu, Non-ground points: %zu", ground_cloud->size(), non_ground_cloud->size());
+
+    // Debugger 1: Visualize ground points
+    std::vector<std::vector<double>> ground_positions, ground_colors;
+    for (const auto& point : ground_cloud->points) {
+        ground_positions.push_back({point.x, point.y, point.z});
+        ground_colors.push_back({0.0, 1.0, 0.0});
+    }
+    this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_ground", 
+        this->fixed_frame, {ground_positions, ground_colors}, this->ground_points_pub,
+        true, {0.05, 0.05, 0.05}, msg->header.stamp);
+
+    for (const auto& point : non_ground_cloud->points) {
+        positions.push_back({point.x, point.y, point.z});
+        intensities.push_back(point.intensity);
+    }
+    
+    // Debugger 2: Visualize non-ground points
+    std::vector<std::vector<double>> non_ground_colors;
+    for (size_t i = 0; i < positions.size(); ++i) {
+        non_ground_colors.push_back({1.0, 1.0, 1.0});
+    }
+    this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_non_ground",
+        this->fixed_frame, {positions, non_ground_colors}, this->non_ground_points_pub,
+        true, {0.05, 0.05, 0.05}, msg->header.stamp);
+
+    if (positions.empty()) {
+        RCLCPP_INFO(this->get_logger(), "[DEBUG] No non-ground points to cluster. Exiting callback.");
+        this->publishMarkerArray(visualization_msgs::msg::Marker::CYLINDER, this->namespace_,
+            this->fixed_frame, {{}, {}}, this->classified_cones_output_rviz_pub,
+            true, {1, 1, 0.5}, msg->header.stamp);
+        this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
+            this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
+        return;
+    }
+
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting DBSCAN on %zu points.", positions.size());
+
+    auto o3d_pcd = std::make_shared<open3d::geometry::PointCloud>();
+    for (const auto& point : positions) {
+        o3d_pcd->points_.emplace_back(point[0], point[1], point[2]);
+    }
+
+    std::vector<int> labels = o3d_pcd->ClusterDBSCAN(this->dbscan_epsilon, this->dbscan_minpoints);
+    int num_labels = *std::max_element(labels.begin(), labels.end()) + 1;
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] DBSCAN found %d potential clusters.", num_labels);
+
+    std::vector<std::vector<std::vector<double>>> classified_points(num_labels);
+    for (size_t index = 0; index < positions.size(); index++) {
+        int label = labels[index];
+        if (label == -1) { continue; }
+        auto point = positions.at(index);
+        classified_points[label].push_back({point[0], point[1], point[2], intensities[index]});
+    }
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Populated %zu non-noise clusters for processing.", classified_points.size());
+
+    // Debugger 3: Visualize clustered points
+    std::vector<std::vector<double>> clustered_positions, clustered_colors;
+    for (const auto& cluster : classified_points) {
+        for (const auto& point : cluster) {
+            clustered_positions.push_back({point[0], point[1], point[2]});
+            clustered_colors.push_back({1.0, 0.0, 1.0});
+        }
+    }
+    this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
+        this->fixed_frame, {clustered_positions, clustered_colors}, this->clustered_points_pub,
+        true, {0.05, 0.05, 0.05}, msg->header.stamp);
+
+    for (auto& cone_class : classified_points) {
+        std::sort(cone_class.begin(), cone_class.end(),
+            [](const std::vector<double>& v1, const std::vector<double>& v2) -> bool {
+                return v1[2] > v2[2];
+            });
+    }
+
+    colors.clear();
+    positions.clear();
+    
+    const bool USE_TRACKER = true;
+
+    if (USE_TRACKER)
+    {
+        // --- DEBUG LOGGER ---
+        RCLCPP_INFO(this->get_logger(), "[DEBUG] --- Running Kalman Filter Tracker ---");
+        RCLCPP_INFO(this->get_logger(), "[TRACKER] Predict step for %zu existing tracks.", tracks_.size());
+        for (auto& track : tracks_) {
+            track.age++;
+            track.misses++;
+        }
+
+        struct Detection { double x, y; std::string color_str; int cluster_idx; bool is_yellow; };
+        std::vector<Detection> detections;
+        for (size_t i = 0; i < classified_points.size(); ++i) {
+            auto& class_ = classified_points[i];
+            if (class_.size() < 10) continue;
+            
+            const double CONE_BASE_RADIUS = 0.12;
+            auto min_x_it = std::min_element(class_.begin(), class_.end(), 
+                [](const std::vector<double>& a, const std::vector<double>& b) { return a[0] < b[0]; });
+            
+            Detection det;
+            det.x = (*min_x_it)[0] + CONE_BASE_RADIUS;
+            det.y = (*min_x_it)[1];
+            det.cluster_idx = i;
+
+            std::vector<double> intensity_vals, z_vals;
+            for (auto& pt : class_) {
+                intensity_vals.push_back(pt.at(3));
+                z_vals.push_back(pt.at(2));
+            }
+            std::vector<double> averaged_intensity_vals = this->movingAverage(intensity_vals, 3);
+            det.is_yellow = this->classifyCone(averaged_intensity_vals, z_vals);
+            det.color_str = det.is_yellow ? "YELLOW" : "BLUE";
+            detections.push_back(det);
+        }
+        // --- DEBUG LOGGER ---
+        RCLCPP_INFO(this->get_logger(), "[TRACKER] Generated %zu new detections from clusters.", detections.size());
+
+        // --- Data Association, Update, and Management 
+
+        // 3. Association Step: Match detections to tracks (Greedy Nearest Neighbor)
+        const double ASSOCIATION_THRESHOLD = 1.5; // Max distance in meters to match a track
+        std::vector<bool> det_matched(detections.size(), false);
+        std::vector<int> track_to_det_map(tracks_.size(), -1); // Map from track index to detection index
+
+        // For each track, find the single best (closest) detection
+        for (size_t i = 0; i < tracks_.size(); ++i) {
+            double min_dist = ASSOCIATION_THRESHOLD;
+            int best_det_idx = -1;
+
+            for (size_t j = 0; j < detections.size(); ++j) {
+                // Only consider detections that haven't been matched yet
+                if (!det_matched[j]) {
+                    double dist = std::hypot(tracks_[i].kf.x.x() - detections[j].x, tracks_[i].kf.x.y() - detections[j].y);
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        best_det_idx = j;
+                    }
+                }
+            }
+            
+            // If a suitable match was found, record it
+            if (best_det_idx != -1) {
+                track_to_det_map[i] = best_det_idx;
+                det_matched[best_det_idx] = true;
+            }
+        }
+
+        // 4. Update & Management Step
+        // Update all tracks that found a match
+        for (size_t i = 0; i < track_to_det_map.size(); ++i) {
+            if (track_to_det_map[i] != -1) {
+                const auto& det = detections[track_to_det_map[i]];
+                tracks_[i].update(det.x, det.y, det.color_str);
+            }
+        }
+
+        // Remove old tracks that have been missed for too many consecutive frames
+        tracks_.erase(
+            std::remove_if(tracks_.begin(), tracks_.end(), 
+                [](const ConeTrack& track){ return track.misses > 5; }), // Tune this miss count
+            tracks_.end()
+        );
+
+        // Create new tracks for detections that were not matched to any existing track
+        for (size_t j = 0; j < detections.size(); ++j) {
+            if (!det_matched[j]) {
+                tracks_.emplace_back(next_track_id_++, detections[j].x, detections[j].y);
+            }
+        }
+        
+        // =================================================================================
+        // --- DATA ASSOCIATION, UPDATE, AND MANAGEMENT LOGIC END ---
+        // =================================================================================
+
+        // --- DEBUG LOGGER ---
+        RCLCPP_INFO(this->get_logger(), "[TRACKER] Associating, updating, and managing tracks...");
+
+        for (const auto& track : tracks_) {
+            if (track.hits > 2 && track.misses < 3) {
+                positions.push_back({track.kf.x.x(), track.kf.x.y(), 0.025});
+                if (track.color == "BLUE") colors.push_back({0.0, 0.0, 1.0});
+                else colors.push_back({1.0, 1.0, 0.0});
+            }
+        }
+    }
+    else 
+    {
+        // --- DEBUG LOGGER ---
+        RCLCPP_INFO(this->get_logger(), "[DEBUG] --- Running Stateless Detector ---");
+        int cone_idx = 0;
+        for (const auto& class_ : classified_points) {
+            if (class_.size() < 10) { continue; }
+            
+            std::vector<double> intensity_vals, z_vals;
+            const double CONE_BASE_RADIUS = 0.12;
+            
+            auto min_x_it = std::min_element(class_.begin(), class_.end(), 
+                [](const std::vector<double>& a, const std::vector<double>& b) { return a[0] < b[0]; });
+            
+            double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS;
+            double cone_y = (*min_x_it)[1];
+            double cone_z = 0.025;
+            
+            for (const auto& pt : class_) {
+                intensity_vals.push_back(pt.at(3));
+                z_vals.push_back(pt.at(2));
+            }
+            
+            std::vector<double> averaged_intensity_vals = this->movingAverage(intensity_vals, 3);
+            positions.push_back({cone_x, cone_y, cone_z});
+            
+            bool is_yellow = classifyConeWLS(class_);
+            
+            if (is_yellow) {
+                colors.push_back({1.0, 1.0, 0.0});
+            } else {
+                colors.push_back({0.0, 0.0, 1.0});
+            }
+            // --- DEBUG LOGGER ---
+            RCLCPP_INFO(this->get_logger(), "[DEBUG]   -> Stateless Cone %d: color=%s, pos=(%.2f, %.2f)", cone_idx++, is_yellow ? "YELLOW" : "BLUE", cone_x, cone_y);
+        }
+    }
+    
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Found %zu cones for final publishing.", positions.size());
+    this->publishMarkerArray(
+        visualization_msgs::msg::Marker::CYLINDER,
+        this->namespace_,
+        this->fixed_frame,
+        {positions, colors},
+        this->classified_cones_output_rviz_pub,
+        true,
+        {0.1, 0.1, 0.5},
+        msg->header.stamp 
+    );
+
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] ---- lidar_raw_sub_callback finished ----");
+}
+
+void ProcessLidar::publishMarkerArray(
+    visualization_msgs::msg::Marker::_type_type type,
+    std::string ns,
+    std::string frame_id,
+    std::vector<std::vector<std::vector<double>>> positions_colours,
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher,
+    bool del_markers,
+    std::vector<double> scales,
+    const rclcpp::Time& stamp)
+{
+    if (!publisher) { return; }
+
+    // --- DEBUG LOGGER ---
+    // Minimal log here as it's called frequently
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] Publishing %zu markers to ns '%s'", positions_colours.at(0).size(), ns.c_str());
+
+    visualization_msgs::msg::MarkerArray marker_array;
+    
+    if (del_markers) {
+        visualization_msgs::msg::Marker del_marker;
+        del_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+        marker_array.markers.push_back(del_marker);
+    }
+
+    visualization_msgs::msg::Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = stamp;
+    marker.ns = ns;
+    marker.type = type;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = scales.at(0);
+    marker.scale.y = scales.at(1);
+    marker.scale.z = scales.at(2);
+
+    for (size_t i = 0; i < positions_colours.at(0).size(); i++) {
+        marker.id = i;
+        marker.pose.position.x = positions_colours.at(0).at(i).at(0);
+        marker.pose.position.y = positions_colours.at(0).at(i).at(1);
+        marker.pose.position.z = positions_colours.at(0).at(i).at(2);
+        marker.color.a = 1.0;
+        marker.color.r = positions_colours.at(1).at(i).at(0);
+        marker.color.g = positions_colours.at(1).at(i).at(1);
+        marker.color.b = positions_colours.at(1).at(i).at(2);
+        marker_array.markers.push_back(marker);
+    }
+
+    publisher->publish(marker_array);
+}
+
+bool ProcessLidar::classifyCone(const std::vector<double>& y_vals, const std::vector<double>& x_vals)
+{
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[CLASSIFY-ORIGINAL] Entered with %zu points.", y_vals.size());
+    if (y_vals.size() < 3) return false;
+
+    int n = y_vals.size();
+    Eigen::MatrixXd A(n, 3);
+    Eigen::VectorXd y(n);
+
+    for (int i = 0; i < n; ++i) {
+        double x = x_vals.at(i);
+        A(i, 0) = x * x;
+        A(i, 1) = x;
+        A(i, 2) = 1.0;
+        y(i) = y_vals.at(i);
+    }
+
+    Eigen::Vector3d coeffs = A.colPivHouseholderQr().solve(y);
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[CLASSIFY-ORIGINAL] Curvature coeff: %f. Result: %s.", coeffs(0), (coeffs(0) > 0) ? "YELLOW" : "BLUE");
+    return coeffs(0) > 0;
+}
+
+std::vector<double> ProcessLidar::movingAverage(const std::vector<double>& data, int kernel)
+{
+    int n = data.size();
+    std::vector<double> result(n, 0.0);
+    if (kernel < 1) return data;
+
+    int half = kernel / 2;
+    for (int i = 0; i < n; ++i) {
+        int start = std::max(0, i - half);
+        int end = std::min(n - 1, i + half);
+        double sum = 0.0;
+        for (int j = start; j <= end; ++j) {
+            sum += data[j];
+        }
+        result[i] = sum / (end - start + 1);
+    }
+    return result;
+}
+
+// =================================================================================================
+// --- NEW: ALTERNATIVE CLASSIFICATION FUNCTIONS ---
+// =================================================================================================
+bool ProcessLidar::classifyConeWLS(const std::vector<std::vector<double>>& cone_cluster)
+{
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[CLASSIFY-WLS] Entered with %zu points.", cone_cluster.size());
+    if (cone_cluster.size() < 3) return false;
+
+    double z_low = cone_cluster.back().at(2);
+    double z_high = cone_cluster.front().at(2);
+    double band_height = (z_high - z_low) / 3.0;
+
+    int n = cone_cluster.size();
+    Eigen::MatrixXd A(n, 3);
+    Eigen::VectorXd b(n);
+    Eigen::VectorXd W(n);
+
+    const double middle_band_weight = 10.0;
+    const double side_band_weight = 1.0;
+
+    for (int i = 0; i < n; ++i) {
+        double z = cone_cluster[i].at(2);
+        double intensity = cone_cluster[i].at(3);
+        
+        A(i, 0) = z * z; A(i, 1) = z; A(i, 2) = 1.0;
+        b(i) = intensity;
+
+        if (z >= z_low + band_height && z < z_low + 2 * band_height) {
+            W(i) = middle_band_weight;
+        } else {
+            W(i) = side_band_weight;
+        }
+    }
+
+    Eigen::MatrixXd AtW = A.transpose() * W.asDiagonal();
+    Eigen::Vector3d coeffs = (AtW * A).ldlt().solve(AtW * b);
+    
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[CLASSIFY-WLS] Curvature coeff: %f. Result: %s.", coeffs(0), (coeffs(0) > 0) ? "YELLOW" : "BLUE");
+    return coeffs(0) > 0;
+}
+
+bool ProcessLidar::classifyConeAnchorFit(const std::vector<std::vector<double>>& cone_cluster)
+{
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[CLASSIFY-ANCHOR] Entered with %zu points.", cone_cluster.size());
+    if (cone_cluster.empty()) return false;
+
+    double z_low = cone_cluster.back().at(2);
+    double z_high = cone_cluster.front().at(2);
+    double band_height = (z_high - z_low) / 3.0;
+
+    std::vector<int> counts(3, 0);
+    std::vector<double> z_sums(3, 0.0);
+    std::vector<double> intensity_sums(3, 0.0);
+
+    for (const auto& pt : cone_cluster) {
+        int band_idx = -1;
+        if (pt[2] < z_low + band_height) band_idx = 0;
+        else if (pt[2] < z_low + 2 * band_height) band_idx = 1;
+        else band_idx = 2;
+
+        if (band_idx != -1) {
+            counts[band_idx]++;
+            z_sums[band_idx] += pt[2];
+            intensity_sums[band_idx] += pt[3];
+        }
+    }
+
+    std::vector<std::pair<double, double>> anchors;
+    for (int i = 0; i < 3; ++i) {
+        if (counts[i] > 0) {
+            anchors.push_back({z_sums[i] / counts[i], intensity_sums[i] / counts[i]});
+        }
+    }
+    
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[CLASSIFY-ANCHOR] Generated %zu anchor points.", anchors.size());
+    if (anchors.size() < 3) return false;
+
+    Eigen::MatrixXd A(anchors.size(), 3);
+    Eigen::VectorXd b(anchors.size());
+    for (size_t i = 0; i < anchors.size(); ++i) {
+        A(i, 0) = anchors[i].first * anchors[i].first;
+        A(i, 1) = anchors[i].first;
+        A(i, 2) = 1.0;
+        b(i) = anchors[i].second;
+    }
+
+    Eigen::Vector3d coeffs = A.colPivHouseholderQr().solve(b);
+
+    // --- DEBUG LOGGER ---
+    RCLCPP_INFO(this->get_logger(), "[CLASSIFY-ANCHOR] Curvature coeff: %f. Result: %s.", coeffs(0), (coeffs(0) > 0) ? "YELLOW" : "BLUE");
+    return coeffs(0) > 0;
+}
+
+bool ProcessLidar::classifyConeML(const std::vector<std::vector<double>>& cone_cluster)
+{
+    (void)cone_cluster;
+    return false;
+}
