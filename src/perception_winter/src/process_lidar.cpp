@@ -16,6 +16,7 @@
 #include <pcl/filters/extract_indices.h> // Required for iterative RANSAC
 #include <pcl/filters/passthrough.h>       // Required for ROI filtering
 #include <pcl/ModelCoefficients.h>      // Required for iterative RANSAC
+#include <chrono> // For timing
 
 ProcessLidar::ProcessLidar() : Node("process_lidar")
 {
@@ -35,17 +36,17 @@ ProcessLidar::ProcessLidar() : Node("process_lidar")
         10
     );
 
-    // Publishers for debugging visualizations
-    this->ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-        this->namespace_ + "/ground_points", 10);
-    this->non_ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-        this->namespace_ + "/non_ground_points", 10);
-    this->clustered_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-        this->namespace_ + "/clustered_points", 10);
+    // // Publishers for debugging visualizations
+    // this->ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    //     this->namespace_ + "/ground_points", 10);
+    // this->non_ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    //     this->namespace_ + "/non_ground_points", 10);
+    // this->clustered_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    //     this->namespace_ + "/clustered_points", 10);
 
     // Initialize new RANSAC parameters
     this->min_z_normal_component = 0.80;
-    this->max_slope_deviation_deg = 10.0;
+    this->max_slope_deviation_deg = 40.0;
 
     // --- DEBUG LOGGER ---
     RCLCPP_INFO(this->get_logger(), "[DEBUG] Constructor finished.");
@@ -60,16 +61,28 @@ ProcessLidar::~ProcessLidar()
 void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::SharedPtr msg)
 {
     RCLCPP_INFO(this->get_logger(), "[DEBUG] ---- lidar_raw_sub_callback entered ----");
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] Received point cloud with %zu points.", msg->points.size());
+    auto pipeline_start = std::chrono::steady_clock::now();
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] Received point cloud with %zu points.", msg->points.size());
 
     std::vector<std::vector<double>> positions, colors;
     std::vector<double> intensities;
 
+    // --- New Code with Exclusion Box ---
     auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
     cloud->points.reserve(msg->points.size());
+
+    // Define the dimensions of the car's body relative to the LiDAR sensor
+    // Tune these values to match your car's geometry
+    const double CAR_FRONT_X = 1.5;  // Ignore points closer than 1.5m in front
+    const double CAR_SIDE_Y  = 1.1;  // Ignore points within 0.9m to the left/right
+
     for (size_t i = 0; i < msg->points.size(); ++i) {
         const auto& pt = msg->points[i];
-        if (pt.x > 0) {
+        
+        // Condition to check if the point is NOT on the car's body
+        bool is_valid_point = (pt.x > CAR_FRONT_X) || (std::abs(pt.y) > CAR_SIDE_Y);
+
+        if (pt.x > 0 && is_valid_point) { // Keep points in front AND outside the exclusion box
             const auto& intensity = msg->channels[0].values[i];
             pcl::PointXYZI p;
             p.x = pt.x;
@@ -80,24 +93,31 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
         }
     }
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] After X-filter, cloud size is: %zu", cloud->points.size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] After X-negative-filter, cloud size is: %zu", cloud->points.size());
 
     auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
     pcl::PassThrough<pcl::PointXYZI> pass;
+
+    // pass.setInputCloud(cloud);
+    // pass.setFilterFieldName("x");
+    // pass.setFilterLimits(8,2);
+    // pass.filter(*cloud_filtered);
+    // // --- DEBUG LOGGER ---
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] After X-filter, cloud size is: %zu", cloud_filtered->points.size());
     
     pass.setInputCloud(cloud);
     pass.setFilterFieldName("y");
     pass.setFilterLimits(-3, 3);
     pass.filter(*cloud_filtered);
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] After Y-filter, cloud size is: %zu", cloud_filtered->points.size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] After Y-filter, cloud size is: %zu", cloud_filtered->points.size());
 
     pass.setInputCloud(cloud_filtered);
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(-1.0, 2.0);
+    pass.setFilterLimits(-0.75, 0.5);
     pass.filter(*cloud_filtered);
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] After Z-filter, cloud size for RANSAC is: %zu", cloud_filtered->points.size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] After Z-filter, cloud size for RANSAC is: %zu", cloud_filtered->points.size());
 
 
     auto non_ground_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
@@ -115,23 +135,23 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     seg.setDistanceThreshold(this->ransac_threshold);
 
     int iterations = 0;
-    const int max_iterations = 5;
-    const size_t min_points_for_plane = 350;
+    const int max_iterations = 8;
+    const size_t min_points_for_plane = 150;
     std::optional<Eigen::Vector3f> reference_normal;
 
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting RANSAC with %zu points.", remaining_cloud->points.size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting RANSAC with %zu points.", remaining_cloud->points.size());
 
     while (remaining_cloud->points.size() > min_points_for_plane && iterations < max_iterations)
     {
         // --- DEBUG LOGGER ---
-        RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC Iteration %d...", iterations + 1);
+        // RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC Iteration %d...", iterations + 1);
 
         seg.setInputCloud(remaining_cloud);
         seg.segment(*inliers, *coefficients);
 
         if (inliers->indices.empty()) {
-            RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] No more potential ground planes found.");
+            // RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] No more potential ground planes found.");
             break;
         }
 
@@ -139,19 +159,19 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
         if (current_normal.z() < 0) { current_normal = -current_normal; }
 
         if (current_normal.z() < this->min_z_normal_component) {
-            RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Plane rejected: too vertical (normal Z=%.2f).", current_normal.z());
+            // RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Plane rejected: too vertical (normal Z=%.2f).", current_normal.z());
             break;
         }
 
         if (!reference_normal.has_value()) {
             reference_normal = current_normal;
-            RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Acquired reference ground plane normal.");
+            // RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Acquired reference ground plane normal.");
         } else {
             double dot_product = current_normal.dot(reference_normal.value());
             double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
             double angle_deg = angle_rad * (180.0 / M_PI);
             if (angle_deg > this->max_slope_deviation_deg) {
-                RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Plane rejected: slope deviates by %.2f deg.", angle_deg);
+                // RCLCPP_INFO(this->get_logger(), "[HEARTBEAT] Plane rejected: slope deviates by %.2f deg.", angle_deg);
                 break;
             }
         }
@@ -173,7 +193,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     *non_ground_cloud = *remaining_cloud;
     
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC complete. Ground points: %zu, Non-ground points: %zu", ground_cloud->size(), non_ground_cloud->size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC complete. Ground points: %zu, Non-ground points: %zu", ground_cloud->size(), non_ground_cloud->size());
 
     // Debugger 1: Visualize ground points
     std::vector<std::vector<double>> ground_positions, ground_colors;
@@ -181,9 +201,9 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
         ground_positions.push_back({point.x, point.y, point.z});
         ground_colors.push_back({0.0, 1.0, 0.0});
     }
-    this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_ground", 
-        this->fixed_frame, {ground_positions, ground_colors}, this->ground_points_pub,
-        true, {0.05, 0.05, 0.05}, msg->header.stamp);
+    // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_ground", 
+    //     this->fixed_frame, {ground_positions, ground_colors}, this->ground_points_pub,
+    //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
 
     for (const auto& point : non_ground_cloud->points) {
         positions.push_back({point.x, point.y, point.z});
@@ -195,22 +215,22 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     for (size_t i = 0; i < positions.size(); ++i) {
         non_ground_colors.push_back({1.0, 1.0, 1.0});
     }
-    this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_non_ground",
-        this->fixed_frame, {positions, non_ground_colors}, this->non_ground_points_pub,
-        true, {0.05, 0.05, 0.05}, msg->header.stamp);
+    // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_non_ground",
+    //     this->fixed_frame, {positions, non_ground_colors}, this->non_ground_points_pub,
+    //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
 
     if (positions.empty()) {
-        RCLCPP_INFO(this->get_logger(), "[DEBUG] No non-ground points to cluster. Exiting callback.");
+        // RCLCPP_INFO(this->get_logger(), "[DEBUG] No non-ground points to cluster. Exiting callback.");
         this->publishMarkerArray(visualization_msgs::msg::Marker::CYLINDER, this->namespace_,
             this->fixed_frame, {{}, {}}, this->classified_cones_output_rviz_pub,
             true, {1, 1, 0.5}, msg->header.stamp);
-        this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
-            this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
+        // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
+        //     this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
         return;
     }
 
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting DBSCAN on %zu points.", positions.size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting DBSCAN on %zu points.", positions.size());
 
     auto o3d_pcd = std::make_shared<open3d::geometry::PointCloud>();
     for (const auto& point : positions) {
@@ -220,7 +240,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     std::vector<int> labels = o3d_pcd->ClusterDBSCAN(this->dbscan_epsilon, this->dbscan_minpoints);
     int num_labels = *std::max_element(labels.begin(), labels.end()) + 1;
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] DBSCAN found %d potential clusters.", num_labels);
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] DBSCAN found %d potential clusters.", num_labels);
 
     std::vector<std::vector<std::vector<double>>> classified_points(num_labels);
     for (size_t index = 0; index < positions.size(); index++) {
@@ -238,9 +258,9 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
             clustered_colors.push_back({1.0, 0.0, 1.0});
         }
     }
-    this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
-        this->fixed_frame, {clustered_positions, clustered_colors}, this->clustered_points_pub,
-        true, {0.05, 0.05, 0.05}, msg->header.stamp);
+    // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
+    //     this->fixed_frame, {clustered_positions, clustered_colors}, this->clustered_points_pub,
+    //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
 
     for (auto& cone_class : classified_points) {
         std::sort(cone_class.begin(), cone_class.end(),
@@ -253,7 +273,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     positions.clear();
     
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] Processing %zu valid clusters...", classified_points.size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] Processing %zu valid clusters...", classified_points.size());
     for (auto& class_ : classified_points) {
         int class_size = class_.size();
         if (class_size < 10) { continue; }
@@ -266,7 +286,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
                 return a[0] < b[0];
             });
         
-        double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS + 2.921;
+        double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS + 1.532;
         double cone_y = (*min_x_it)[1];
         double cone_z = 0.1629;
         
@@ -289,7 +309,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     }
 
     // --- DEBUG LOGGER ---
-    RCLCPP_INFO(this->get_logger(), "[DEBUG] Found %zu cones for final publishing.", positions.size());
+    // RCLCPP_INFO(this->get_logger(), "[DEBUG] Found %zu cones for final publishing.", positions.size());
     this->publishMarkerArray(
         visualization_msgs::msg::Marker::CYLINDER,
         this->namespace_,
@@ -302,6 +322,9 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     );
 
     RCLCPP_INFO(this->get_logger(), "[DEBUG] ---- lidar_raw_sub_callback finished ----");
+    auto pipeline_end = std::chrono::steady_clock::now();
+    RCLCPP_INFO(this->get_logger(), "[TIMER] Total pipeline took %ld ms",
+        std::chrono::duration_cast<std::chrono::milliseconds>(pipeline_end - pipeline_start).count()); 
 }
 
 void ProcessLidar::publishMarkerArray(

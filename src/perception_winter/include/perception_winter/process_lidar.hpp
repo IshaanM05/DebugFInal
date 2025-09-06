@@ -23,7 +23,7 @@ private:
   const std::string namespace_ = "process_lidar";
   const std::string fixed_frame = "Fr1A"; // Can change this later
   double dbscan_epsilon = 0.3;
-  int dbscan_minpoints = 2;
+  int dbscan_minpoints = 5;
 
   // Relative to Lidar, in metres
   const double ground_z = -0.625212;
