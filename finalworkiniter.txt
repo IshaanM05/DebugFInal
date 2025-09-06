@@ -117,17 +117,17 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
 {
     auto pipeline_start = std::chrono::steady_clock::now();
     RCLCPP_INFO(this->get_logger(), "[DEBUG] ---- lidar_raw_sub_callback entered ----");
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] Received point cloud with %zu points.", msg->points.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Received point cloud with %zu points.", msg->points.size());
 
     // === GUARD: empty incoming cloud ===
     if (msg->points.empty()) {
-        //RCLCPP_WARN(this->get_logger(), "[WARN] Empty point cloud received. Skipping frame.");
+        RCLCPP_WARN(this->get_logger(), "[WARN] Empty point cloud received. Skipping frame.");
         return;
     }
 
     // === GUARD: intensity channel present and size matches points ===
     if (msg->channels.empty() || msg->channels[0].values.size() != msg->points.size()) {
-        //RCLCPP_WARN(this->get_logger(), "[WARN] Point cloud has no valid intensity channel or size mismatch. Skipping frame.");
+        RCLCPP_WARN(this->get_logger(), "[WARN] Point cloud has no valid intensity channel or size mismatch. Skipping frame.");
         return;
     }
 
@@ -152,7 +152,7 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
         }
     }
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] After X-filter, cloud size is: %zu", cloud->points.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] After X-filter, cloud size is: %zu", cloud->points.size());
 
     auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
     pcl::PassThrough<pcl::PointXYZI> pass;
@@ -162,14 +162,14 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
     pass.setFilterLimits(-3, 3);
     pass.filter(*cloud_filtered);
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] After Y-filter, cloud size is: %zu", cloud_filtered->points.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] After Y-filter, cloud size is: %zu", cloud_filtered->points.size());
 
     pass.setInputCloud(cloud_filtered);
     pass.setFilterFieldName("z");
     pass.setFilterLimits(-1.0, 2.0);
     pass.filter(*cloud_filtered);
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] After Z-filter, cloud size for RANSAC is: %zu", cloud_filtered->points.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] After Z-filter, cloud size for RANSAC is: %zu", cloud_filtered->points.size());
     auto preprocess_end = std::chrono::steady_clock::now();
     RCLCPP_INFO(this->get_logger(), "[TIMER] Preprocessing took %ld ms", 
         std::chrono::duration_cast<std::chrono::milliseconds>(preprocess_end - preprocess_start).count());
@@ -197,7 +197,7 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
     std::optional<Eigen::Vector3f> reference_normal;
 
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting RANSAC with %zu points.", remaining_cloud->points.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting RANSAC with %zu points.", remaining_cloud->points.size());
 
     while (remaining_cloud->points.size() > min_points_for_plane && iterations < max_iterations)
     {
@@ -254,7 +254,7 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
         std::chrono::duration_cast<std::chrono::milliseconds>(ransac_end - ransac_start).count());
     
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC complete. Ground points: %zu, Non-ground points: %zu", ground_cloud->size(), non_ground_cloud->size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC complete. Ground points: %zu, Non-ground points: %zu", ground_cloud->size(), non_ground_cloud->size());
 
     // // Debugger 1: Visualize ground points
     // std::vector<std::vector<double>> ground_positions, ground_colors;
@@ -291,7 +291,7 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
     // }
 
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting DBSCAN on %zu points.", positions.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting DBSCAN on %zu points.", positions.size());
     auto clustering_start = std::chrono::steady_clock::now();
 
     auto o3d_pcd = std::make_shared<open3d::geometry::PointCloud>();
@@ -302,7 +302,7 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
     std::vector<int> labels = o3d_pcd->ClusterDBSCAN(this->dbscan_epsilon, this->dbscan_minpoints);
     int num_labels = *std::max_element(labels.begin(), labels.end()) + 1;
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] DBSCAN found %d potential clusters.", num_labels);
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] DBSCAN found %d potential clusters.", num_labels);
 
     auto clustering_end = std::chrono::steady_clock::now();
     RCLCPP_INFO(this->get_logger(), "[TIMER] DBSCAN clustering took %ld ms",
@@ -342,7 +342,7 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
     positions.clear();
     
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] Processing %zu valid clusters...", classified_points.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Processing %zu valid clusters...", classified_points.size());
     for (auto& class_ : classified_points) {
         int class_size = class_.size();
         if (class_size < 10) { continue; }
@@ -386,7 +386,7 @@ void ProcessLidar::processCloud(const sensor_msgs::msg::PointCloud::SharedPtr ms
         std::chrono::duration_cast<std::chrono::milliseconds>(pipeline_end - pipeline_start).count());
 
     // --- DEBUG LOGGER ---
-    //RCLCPP_INFO(this->get_logger(), "[DEBUG] Found %zu cones for final publishing.", positions.size());
+    RCLCPP_INFO(this->get_logger(), "[DEBUG] Found %zu cones for final publishing.", positions.size());
     this->publishMarkerArray(
         visualization_msgs::msg::Marker::CYLINDER,
         this->namespace_,

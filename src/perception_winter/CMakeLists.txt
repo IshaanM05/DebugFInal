@@ -23,6 +23,7 @@ find_package(visualization_msgs REQUIRED)
 find_package(Open3D REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(pcl_conversions REQUIRED)
+find_package(OpenMP REQUIRED)
 # --- ADDED: This line is required to find the PCL library before using its variables ---
 find_package(PCL REQUIRED) 
 include_directories(${PCL_INCLUDE_DIRS})
@@ -33,8 +34,16 @@ add_definitions(${PCL_DEFINITIONS})
 add_executable(process_lidar
   src/process_lidar.cpp
   src/main.cpp)
+
+
 ament_target_dependencies(process_lidar rclcpp sensor_msgs visualization_msgs pcl_conversions)
-target_link_libraries(process_lidar Open3D::Open3D Eigen3::Eigen ${PCL_LIBRARIES}) # As it's not a ros2 package
+#target_link_libraries(process_lidar Open3D::Open3D Eigen3::Eigen ${PCL_LIBRARIES}) # As it's not a ros2 package
+target_link_libraries(process_lidar
+    Open3D::Open3D
+    Eigen3::Eigen
+    ${PCL_LIBRARIES}
+    OpenMP::OpenMP_CXX
+)
 
 # --- ADDED: Executable for the new feature extraction node ---
 # --- CHANGE: Added the required main source file for this executable ---
@@ -57,6 +66,8 @@ target_link_libraries(feature_extractor
   Open3D::Open3D
   Eigen3::Eigen
 )
+
+
 
 
 # Install both targets so ros2 run can find them
@@ -89,15 +100,15 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
-# install(
-#   DIRECTORY custom_track_1
-#   DESTINATION share/${PROJECT_NAME}
-# )
+install(
+  DIRECTORY custom_track_1
+  DESTINATION share/${PROJECT_NAME}
+)
 
-# install(
-#   DIRECTORY TrackDrive
-#   DESTINATION share/${PROJECT_NAME}
-# )
+install(
+  DIRECTORY TrackDrive
+  DESTINATION share/${PROJECT_NAME}
+)
 
 # ----------------------------- END -----------------------
 

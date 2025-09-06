@@ -10,7 +10,12 @@
 #include "rclcpp/rclcpp.hpp"                         // Node class inheritance
 #include "visualization_msgs/msg/marker_array.hpp"   // Marker array for visualization
 #include "visualization_msgs/msg/marker.hpp"
-#include <sensor_msgs/msg/point_cloud.hpp>           // Only use PointCloud2
+#include <sensor_msgs/msg/point_cloud.hpp>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+
 
 // Note: <fstream> is no longer needed and has been removed.
 
@@ -21,14 +26,14 @@ class ProcessLidar : public rclcpp::Node {
 private:
   // Constants
   const std::string namespace_ = "process_lidar";
-  const std::string fixed_frame = "Fr1A"; // Can change this later
+  const std::string fixed_frame = "Lidar_F"; // Can change this later
   double dbscan_epsilon = 0.3;
   int dbscan_minpoints = 2;
 
   // Relative to Lidar, in metres
   const double ground_z = -0.625212;
   const double rear_end_x = -1.532;
-  const double lidar_z_threshhold = this->ground_z + 0.05;
+  const double lidar_z_threshhold = ground_z + 0.05;
 
   // --- CHANGE: Updated RANSAC threshold for better robustness ---
   const double ransac_threshold = 0.03;
@@ -50,9 +55,9 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr classified_cones_output_rviz_pub;
 
   // --- ADDITION: Declarations for the new visual debuggers ---
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ground_points_pub;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr non_ground_points_pub;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr clustered_points_pub;
+  // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ground_points_pub;
+  // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr non_ground_points_pub;
+  // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr clustered_points_pub;
 
   // Private Functions
   /**
@@ -60,6 +65,12 @@ private:
    * @param msg Shared pointer object of the topic's msg
    * @return void
    */
+
+  std::queue<sensor_msgs::msg::PointCloud::SharedPtr> cloud_queue_;
+  std::mutex queue_mutex_;
+  std::condition_variable queue_cv_;
+  std::thread worker_thread_;
+  bool stop_worker_ = false;
   void lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::SharedPtr msg); // keep as PointCloud
 
   /**
@@ -83,6 +94,10 @@ private:
     std::vector<double> scales,
     const rclcpp::Time& stamp
   );
+
+  void processingWorker();
+  void processCloud(const sensor_msgs::msg::PointCloud::SharedPtr msg);
+
 
   
   bool classifyCone(const std::vector<double>& y_vals, const std::vector<double>& x_vals);

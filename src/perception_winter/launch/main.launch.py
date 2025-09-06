@@ -14,21 +14,21 @@ def generate_launch_description():
         'config.rviz'
     )
     # # Point to the rosbag2 directory, not the db3 file
-    # rosbag_path = os.path.join(
-    #     package_share_directory,
-    #     'custom_track_1'
-    #     #'TrackDrive'
-    # )
+    rosbag_path = os.path.join(
+        package_share_directory,
+        'custom_track_1'
+        #'TrackDrive'
+    )
 
     return LaunchDescription([
         #Launch rviz
-        # Node(
-        #     package='rviz2',
-        #     executable='rviz2',
-        #     name='rviz2',
-        #     arguments=['-d', rviz_config_path],
-        #     output='screen'
-        # ),
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d', rviz_config_path],
+            output='screen'
+        ),
 
         # Running the process_lidar node
         Node(
@@ -43,12 +43,10 @@ def generate_launch_description():
         #ros2 service call /rosbag2_player/resume std_srvs/srv/Trigger {}
 
 
-        # ExecuteProcess(
-        #     cmd=['ros2', 'bag', 'play', rosbag_path, '--loop'],
-        #     output='screen'
-        # ),
-        
-        #ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 Obj_F Lidar_F
+        ExecuteProcess(
+            cmd=['ros2', 'bag', 'play', rosbag_path, '--loop'],
+            output='screen'
+        ),
 
         # Static transform publisher
         Node(

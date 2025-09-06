@@ -1,3 +1,8 @@
 {
-    "cmake.sourceDirectory": "/home/ishaan/Desktop/DebugFInal/src/perception_winter"
+    "cmake.sourceDirectory": "/home/ishaan/Desktop/DebugFInal/src/perception_winter",
+    "files.associations": {
+        "chrono": "cpp",
+        "atomic": "cpp",
+        "condition_variable": "cpp"
+    }
 }
