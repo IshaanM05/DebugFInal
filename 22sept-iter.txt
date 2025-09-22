@@ -196,25 +196,25 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     // RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC complete. Ground points: %zu, Non-ground points: %zu", ground_cloud->size(), non_ground_cloud->size());
 
     // Debugger 1: Visualize ground points
-    std::vector<std::vector<double>> ground_positions, ground_colors;
-    // for (const auto& point : ground_cloud->points) {
-    //     ground_positions.push_back({point.x, point.y, point.z});
-    //     ground_colors.push_back({0.0, 1.0, 0.0});
-    // }
-    // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_ground", 
-    //     this->fixed_frame, {ground_positions, ground_colors}, this->ground_points_pub,
-    //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
-
-    for (const auto& point : non_ground_cloud->points) {
-        positions.push_back({point.x, point.y, point.z});
-        intensities.push_back(point.intensity);
+     std::vector<std::vector<double>> ground_positions, ground_colors;
+     for (const auto& point : ground_cloud->points) {
+         ground_positions.push_back({point.x, point.y, point.z});
+         ground_colors.push_back({0.0, 1.0, 0.0});
     }
+    // // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_ground", 
+    // //     this->fixed_frame, {ground_positions, ground_colors}, this->ground_points_pub,
+    // //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
+
+     for (const auto& point : non_ground_cloud->points) {
+         positions.push_back({point.x, point.y, point.z});
+         intensities.push_back(point.intensity);
+     }
     
-    // Debugger 2: Visualize non-ground points
-    // std::vector<std::vector<double>> non_ground_colors;
-    // for (size_t i = 0; i < positions.size(); ++i) {
-    //     non_ground_colors.push_back({1.0, 1.0, 1.0});
-    // }
+    // // Debugger 2: Visualize non-ground points
+     std::vector<std::vector<double>> non_ground_colors;
+     for (size_t i = 0; i < positions.size(); ++i) {
+         non_ground_colors.push_back({1.0, 1.0, 1.0});
+     }
     // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_non_ground",
     //     this->fixed_frame, {positions, non_ground_colors}, this->non_ground_points_pub,
     //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
