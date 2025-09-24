@@ -39,10 +39,10 @@ ProcessLidar::ProcessLidar() : Node("process_lidar")
     // // Publishers for debugging visualizations
     // this->ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
     //     this->namespace_ + "/ground_points", 10);
-    // this->non_ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-    //     this->namespace_ + "/non_ground_points", 10);
-    // this->clustered_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-    //     this->namespace_ + "/clustered_points", 10);
+    this->non_ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+        this->namespace_ + "/non_ground_points", 10);
+    this->clustered_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+        this->namespace_ + "/clustered_points", 10);
 
     // Initialize new RANSAC parameters
     this->min_z_normal_component = 0.80;
@@ -74,7 +74,8 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     // Define the dimensions of the car's body relative to the LiDAR sensor
     // Tune these values to match your car's geometry
     const double CAR_FRONT_X = 1.5;  // Ignore points closer than 1.5m in front
-    const double CAR_SIDE_Y  = 1.1;  // Ignore points within 0.9m to the left/right
+    const double CAR_SIDE_Y  = 1.25;  // Ignore points within 0.9m to the left/right
+    std::cout << "Car y = " << CAR_SIDE_Y << std::endl;
 
     for (size_t i = 0; i < msg->points.size(); ++i) {
         const auto& pt = msg->points[i];
@@ -114,7 +115,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
 
     pass.setInputCloud(cloud_filtered);
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(-0.75, 0.5);
+    pass.setFilterLimits(-0.75, 0.75);
     pass.filter(*cloud_filtered);
     // --- DEBUG LOGGER ---
     // RCLCPP_INFO(this->get_logger(), "[DEBUG] After Z-filter, cloud size for RANSAC is: %zu", cloud_filtered->points.size());
@@ -211,23 +212,23 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     }
     
     // Debugger 2: Visualize non-ground points
-    // std::vector<std::vector<double>> non_ground_colors;
-    // for (size_t i = 0; i < positions.size(); ++i) {
-    //     non_ground_colors.push_back({1.0, 1.0, 1.0});
-    // }
+    std::vector<std::vector<double>> non_ground_colors;
+    for (size_t i = 0; i < positions.size(); ++i) {
+        non_ground_colors.push_back({1.0, 1.0, 1.0});
+    }
     // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_non_ground",
     //     this->fixed_frame, {positions, non_ground_colors}, this->non_ground_points_pub,
     //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
 
-    if (positions.empty()) {
-        // RCLCPP_INFO(this->get_logger(), "[DEBUG] No non-ground points to cluster. Exiting callback.");
-        this->publishMarkerArray(visualization_msgs::msg::Marker::CYLINDER, this->namespace_,
-            this->fixed_frame, {{}, {}}, this->classified_cones_output_rviz_pub,
-            true, {1, 1, 0.5}, msg->header.stamp);
-        // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
-        //     this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
-        return;
-    }
+    // if (positions.empty()) {
+    //     // RCLCPP_INFO(this->get_logger(), "[DEBUG] No non-ground points to cluster. Exiting callback.");
+    //     this->publishMarkerArray(visualization_msgs::msg::Marker::CYLINDER, this->namespace_,
+    //         this->fixed_frame, {{}, {}}, this->classified_cones_output_rviz_pub,
+    //         true, {1, 1, 0.5}, msg->header.stamp);
+    //     // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
+    //     //     this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
+    //     return;
+    // }
 
     // --- DEBUG LOGGER ---
     // RCLCPP_INFO(this->get_logger(), "[DEBUG] Starting DBSCAN on %zu points.", positions.size());
@@ -358,16 +359,53 @@ void ProcessLidar::publishMarkerArray(
     marker.scale.y = scales.at(1);
     marker.scale.z = scales.at(2);
 
+    // for (size_t i = 0; i < positions_colours.at(0).size(); i++) {
+    //     marker.id = i;
+    //     marker.pose.position.x = positions_colours.at(0).at(i).at(0);
+    //     marker.pose.position.y = positions_colours.at(0).at(i).at(1);
+    //     marker.pose.position.z = positions_colours.at(0).at(i).at(2);
+    //     marker.color.a = 1.0;
+    //     marker.color.r = positions_colours.at(1).at(i).at(0);
+    //     marker.color.g = positions_colours.at(1).at(i).at(1);
+    //     marker.color.b = positions_colours.at(1).at(i).at(2);
+    //     marker_array.markers.push_back(marker);
+        
+    //     std::cout << "Published marker at (" 
+    //               << marker.pose.position.x << ", "
+    //               << marker.pose.position.y << ", "
+    //               << marker.pose.position.z << ") with color ("
+    //               << marker.color.r << ", "
+    //               << marker.color.g << ", "
+    //               << marker.color.b << ")\n";
+    // }
+
     for (size_t i = 0; i < positions_colours.at(0).size(); i++) {
+        double x = positions_colours.at(0).at(i).at(0);
+        double y = positions_colours.at(0).at(i).at(1);
+        double z = positions_colours.at(0).at(i).at(2);
+
+        // ---- Ignore persistent noise cone ----
+        if ( (x < 4.0) ) {
+            continue;  // skip this marker
+        }
+
         marker.id = i;
-        marker.pose.position.x = positions_colours.at(0).at(i).at(0);
-        marker.pose.position.y = positions_colours.at(0).at(i).at(1);
-        marker.pose.position.z = positions_colours.at(0).at(i).at(2);
+        marker.pose.position.x = x;
+        marker.pose.position.y = y;
+        marker.pose.position.z = z;
         marker.color.a = 1.0;
         marker.color.r = positions_colours.at(1).at(i).at(0);
         marker.color.g = positions_colours.at(1).at(i).at(1);
         marker.color.b = positions_colours.at(1).at(i).at(2);
         marker_array.markers.push_back(marker);
+
+        std::cout << "Published marker at (" 
+                << marker.pose.position.x << ", "
+                << marker.pose.position.y << ", "
+                << marker.pose.position.z << ") with color ("
+                << marker.color.r << ", "
+                << marker.color.g << ", "
+                << marker.color.b << ")\n";
     }
 
     publisher->publish(marker_array);
