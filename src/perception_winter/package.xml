@@ -26,6 +26,8 @@
     <depend>libpcl-all-dev</depend>
     <depend>libeigen3-dev</depend>
     <depend>libopen3d-dev</depend>
+    <depend>dv_msgs</depend>
+
     <!-- END -->
 
   </export>
