@@ -11,8 +11,8 @@
 #include "visualization_msgs/msg/marker_array.hpp"   // Marker array for visualization
 #include "visualization_msgs/msg/marker.hpp"
 #include <sensor_msgs/msg/point_cloud.hpp>           // Only use PointCloud2
-// #include "dv_msgs/msg/indexed_track.hpp"
-// #include "dv_msgs/msg/indexed_cone.hpp"  // if needed
+#include "dv_msgs/msg/indexed_track.hpp"
+#include "dv_msgs/msg/indexed_cone.hpp"  // if needed
 
 
 // Note: <fstream> is no longer needed and has been removed.
@@ -25,8 +25,8 @@ private:
   // Constants
   const std::string namespace_ = "process_lidar";
   const std::string fixed_frame = "Fr1A"; // Can change this later
-  double dbscan_epsilon = 0.12;
-  int dbscan_minpoints = 4;
+  double dbscan_epsilon = 0.20;
+  int dbscan_minpoints = 3;
 
   // Relative to Lidar, in metres
   const double ground_z = -0.625212;
@@ -34,7 +34,7 @@ private:
   const double lidar_z_threshhold = this->ground_z + 0.05;
 
   // --- CHANGE: Updated RANSAC threshold for better robustness ---
-  const double ransac_threshold = 0.03;
+  const double ransac_threshold = 0.015;
 
   // Parameters for iterative RANSAC
   double min_z_normal_component;
@@ -51,7 +51,7 @@ private:
   // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr lidar_raw_output_rviz_pub;
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr reference_vehicle_rviz_pub;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr classified_cones_output_rviz_pub;
-  // rclcpp::Publisher<dv_msgs::msg::IndexedTrack>::SharedPtr detected_cones_pub;
+  rclcpp::Publisher<dv_msgs::msg::IndexedTrack>::SharedPtr detected_cones_pub;
 
 
   // --- ADDITION: Declarations for the new visual debuggers ---

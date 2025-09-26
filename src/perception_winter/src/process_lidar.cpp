@@ -35,10 +35,10 @@ ProcessLidar::ProcessLidar() : Node("process_lidar")
         this->classified_cones_output_rviz_topic,
         10
     );
-    // this->detected_cones_pub = this->create_publisher<dv_msgs::msg::IndexedTrack>(
-    // "/detected_cones",
-    // 10
-    //);
+    this->detected_cones_pub = this->create_publisher<dv_msgs::msg::IndexedTrack>(
+    "/detected_cones",
+    10
+    );
 
 
     // // Publishers for debugging visualizations
@@ -332,28 +332,28 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
             {0.1, 0.1, 0.5},
             msg->header.stamp);
 
-        // // ---------------- Publish IndexedTrack ----------------
-        // if (this->detected_cones_pub) {
-        //     dv_msgs::msg::IndexedTrack track_msg;
-        //     track_msg.track.clear();
-        //     for (size_t i = 0; i < positions.size(); ++i) {
-        //         dv_msgs::msg::IndexedCone cone_msg;
-        //         cone_msg.location.x = positions[i][0];
-        //         cone_msg.location.y = positions[i][1];
-        //         cone_msg.location.z = positions[i][2];
+        // ---------------- Publish IndexedTrack ----------------
+        if (this->detected_cones_pub) {
+            dv_msgs::msg::IndexedTrack track_msg;
+            track_msg.track.clear();
+            for (size_t i = 0; i < positions.size(); ++i) {
+                dv_msgs::msg::IndexedCone cone_msg;
+                cone_msg.location.x = positions[i][0];
+                cone_msg.location.y = positions[i][1];
+                cone_msg.location.z = positions[i][2];
 
-        //         if (colors[i][0] == 1.0 && colors[i][1] == 1.0)
-        //             cone_msg.color = dv_msgs::msg::IndexedCone::YELLOW;
-        //         else if (colors[i][0] == 0.0 && colors[i][1] == 0.0 && colors[i][2] == 1.0)
-        //             cone_msg.color = dv_msgs::msg::IndexedCone::BLUE;
-        //         else
-        //             cone_msg.color = dv_msgs::msg::IndexedCone::UNKNOWN;
+                if (colors[i][0] == 1.0 && colors[i][1] == 1.0)
+                    cone_msg.color = dv_msgs::msg::IndexedCone::YELLOW;
+                else if (colors[i][0] == 0.0 && colors[i][1] == 0.0 && colors[i][2] == 1.0)
+                    cone_msg.color = dv_msgs::msg::IndexedCone::BLUE;
+                else
+                    cone_msg.color = dv_msgs::msg::IndexedCone::UNKNOWN;
 
-        //         cone_msg.index = i;
-        //         track_msg.track.push_back(cone_msg);
-        //     }
-        //     this->detected_cones_pub->publish(track_msg);
-        // }
+                cone_msg.index = i;
+                track_msg.track.push_back(cone_msg);
+            }
+            this->detected_cones_pub->publish(track_msg);
+        }
 
         RCLCPP_INFO(this->get_logger(), "[DEBUG] ---- lidar_raw_sub_callback finished ----");
         auto pipeline_end = std::chrono::steady_clock::now();
