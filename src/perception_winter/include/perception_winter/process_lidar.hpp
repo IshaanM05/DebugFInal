@@ -66,6 +66,8 @@ private:
    * @return void
    */
   void lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::SharedPtr msg); // keep as PointCloud
+  double getMedian(const std::vector<std::vector<double>> &points, int idx) const;
+
 
   /**
    * @brief Publishes a marker array

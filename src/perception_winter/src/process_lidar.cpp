@@ -57,6 +57,37 @@ ProcessLidar::ProcessLidar() : Node("process_lidar")
     RCLCPP_INFO(this->get_logger(), "[DEBUG] Constructor finished.");
 }
 
+// double ProcessLidar::getMedian(const std::vector<std::vector<double>> &points, int idx) const {
+//     std::vector<double> vals;
+//     vals.reserve(points.size());
+//     for (const auto &pt : points) vals.push_back(pt[idx]);
+//     std::nth_element(vals.begin(), vals.begin() + vals.size()/2, vals.end());
+//     return vals[vals.size()/2];
+// }
+
+double ProcessLidar::getMedian(const std::vector<std::vector<double>> &points, int idx) const {
+    if (points.empty()) return 0.0;
+
+    std::vector<size_t> indices(points.size());
+    for (size_t i = 0; i < points.size(); ++i) indices[i] = i;
+
+    // Use nth_element on indices comparing the actual values
+    size_t mid = indices.size() / 2;
+    std::nth_element(indices.begin(), indices.begin() + mid, indices.end(),
+                     [&points, idx](size_t a, size_t b) { return points[a][idx] < points[b][idx]; });
+
+    double median = points[indices[mid]][idx];
+
+    // Optional: for even-sized clusters, average middle two values
+    if (indices.size() % 2 == 0) {
+        size_t max_lower_idx = std::max_element(indices.begin(), indices.begin() + mid,
+                                                [&points, idx](size_t a, size_t b) { return points[a][idx] < points[b][idx]; }) - indices.begin();
+        median = 0.5 * (median + points[indices[max_lower_idx]][idx]);
+    }
+
+    return median;
+}
+
 ProcessLidar::~ProcessLidar()
 {
     // --- DEBUG LOGGER ---
@@ -216,8 +247,8 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
         //     this->publishMarkerArray(visualization_msgs::msg::Marker::CYLINDER, this->namespace_,
         //         this->fixed_frame, {{}, {}}, this->classified_cones_output_rviz_pub,
         //         true, {1, 1, 0.5}, msg->header.stamp);
-        //     // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
-        //     //     this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
+        //     this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
+        //         this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
         //     return;
         // }
 
@@ -286,7 +317,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
 
         for (auto &class_ : classified_points) {
             int class_size = class_.size();
-            if (class_size < 10) continue;
+            if (class_size < 4) continue;
 
             std::vector<double> intensity_vals;
             std::vector<double> z_vals;
@@ -295,14 +326,38 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
 
             const double CONE_BASE_RADIUS = 0.12;
 
-            auto min_x_it = std::min_element(class_.begin(), class_.end(),
-                                             [](const std::vector<double> &a, const std::vector<double> &b) {
-                                                 return a[0] < b[0];
-                                             });
+            // auto min_x_it = std::min_element(class_.begin(), class_.end(),
+            //                                  [](const std::vector<double> &a, const std::vector<double> &b) {
+            //                                      return a[0] < b[0];
+            //                                  });
 
-            double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS + 1.532;
-            double cone_y = (*min_x_it)[1];
-            double cone_z = 0.1629;
+            // double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS + 1.532;
+            // double cone_y = (*min_x_it)[1];
+            // double cone_z = 0.1629;
+
+            // Compute min X and min/max Y
+            double min_x = class_[0][0];
+            double min_y = class_[0][1], max_y = class_[0][1];
+            for (auto &pt : class_) {
+                min_x = std::min(min_x, pt[0]);
+                min_y = std::min(min_y, pt[1]);
+                max_y = std::max(max_y, pt[1]);
+            }
+
+            // Compute median
+            double median_x = getMedian(class_, 0);
+            double median_y = getMedian(class_, 1);
+
+            // Weighted blend for X: median_x and min_x + CONE_BASE_RADIUS
+            const double w_median = 0.7;
+            const double w_min_x  = 0.3;
+            const double w_min_y  = 0.3;
+
+            double cone_x = w_median * median_x + w_min_x * (min_x + CONE_BASE_RADIUS) + 1.532; // LiDAR offset
+            double cone_y = w_median * median_y + w_min_y * (min_y + CONE_BASE_RADIUS);   
+            double cone_z = 0.1629;     // cones assumed on ground
+
+
 
             for (auto &pt : class_) {
                 intensity_vals.push_back(pt.at(3));
