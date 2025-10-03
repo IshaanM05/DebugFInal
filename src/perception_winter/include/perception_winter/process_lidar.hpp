@@ -1,7 +1,7 @@
 /**
- * @name process_lidar.hpp
- * @brief Header (Declaration / Interface) file for the node
- * @author 
+ * @file process_lidar.hpp
+ * @brief Header (Declaration / Interface) file for the LiDAR processing node
+ * @author Siddhesh Phadke
  */
 
 #ifndef PROCESS_LIDAR_HPP
@@ -10,100 +10,104 @@
 #include "rclcpp/rclcpp.hpp"                         // Node class inheritance
 #include "visualization_msgs/msg/marker_array.hpp"   // Marker array for visualization
 #include "visualization_msgs/msg/marker.hpp"
-#include <sensor_msgs/msg/point_cloud.hpp>           // Only use PointCloud2
-#include "dv_msgs/msg/indexed_track.hpp"
-#include "dv_msgs/msg/indexed_cone.hpp"  // if needed
-
-
-// Note: <fstream> is no longer needed and has been removed.
+#include <sensor_msgs/msg/point_cloud.hpp>           // PointCloud message type
+#include "dv_msgs/msg/indexed_track.hpp"             // Track message for detected cones
+#include "dv_msgs/msg/indexed_cone.hpp"              // Cone message definition
+#include "std_msgs/msg/float32_multi_array.hpp"      // For filtered points and clusters
 
 /**
- * @brief Node class Interface
+ * @brief LiDAR Processing Node Class
+ * 
+ * This node processes raw LiDAR point cloud data to detect and classify cones
+ * using RANSAC ground removal, DBSCAN clustering, and intensity-based classification.
  */
 class ProcessLidar : public rclcpp::Node {
 private:
-  // Constants
+  // Node configuration
   const std::string namespace_ = "process_lidar";
-  const std::string fixed_frame = "Fr1A"; // Can change this later
+  const std::string fixed_frame = "Fr1A"; // Coordinate frame for all outputs
+
+  // DBSCAN clustering parameters
   double dbscan_epsilon = 0.20;
   int dbscan_minpoints = 3;
 
-  // Relative to Lidar, in metres
+  // LiDAR geometry parameters (relative to LiDAR sensor in meters)
   const double ground_z = -0.625212;
   const double rear_end_x = -1.532;
-  const double lidar_z_threshhold = this->ground_z + 0.05;
+  const double lidar_z_threshold = this->ground_z + 0.05;
 
-  // --- CHANGE: Updated RANSAC threshold for better robustness ---
+  // RANSAC ground removal parameters
   const double ransac_threshold = 0.015;
-
-  // Parameters for iterative RANSAC
   double min_z_normal_component;
   double max_slope_deviation_deg;
 
-  // Topics
-  const std::string lidar_raw_input_topic = "/carmaker/pointcloud"; // Lidar data input
-  // const std::string lidar_raw_output_rviz_topic = this->namespace_+"/lidar/raw"; // Lidar raw data output topic
-  const std::string classified_cones_output_rviz_topic = this->namespace_ + "/classified_cones"; // Final output
-  const std::string reference_vehicle_rviz_topic = this->namespace_ + "/reference_vehicle";      // Reference vehicle
+  // ROS 2 topic names
+  const std::string lidar_raw_input_topic = "/carmaker/pointcloud";
+  const std::string classified_cones_output_rviz_topic = this->namespace_ + "/classified_cones";
 
-  // Publishers and Subscribers
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud>::SharedPtr lidar_raw_input_sub; // switched to PointCloud
-  // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr lidar_raw_output_rviz_pub;
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr reference_vehicle_rviz_pub;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr classified_cones_output_rviz_pub;
+  // ROS 2 Publishers and Subscribers
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud>::SharedPtr lidar_raw_input_sub;
+  
+  // Main output publishers
   rclcpp::Publisher<dv_msgs::msg::IndexedTrack>::SharedPtr detected_cones_pub;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr filtered_points_pub;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lidar_clusters_pub;
 
+  // Visualization publishers (optional - kept for compatibility)
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr classified_cones_output_rviz_pub;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr reference_vehicle_rviz_pub;
 
-  // --- ADDITION: Declarations for the new visual debuggers ---
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ground_points_pub;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr non_ground_points_pub;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr clustered_points_pub;
-
-  // Private Functions
+  // Private member functions
   /**
-   * @brief Callback function for lidar's raw input subscription
-   * @param msg Shared pointer object of the topic's msg
-   * @return void
+   * @brief Main callback for processing incoming LiDAR point cloud data
+   * @param msg Shared pointer to the PointCloud message
    */
-  void lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::SharedPtr msg); // keep as PointCloud
+  void lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::SharedPtr msg);
+
+  /**
+   * @brief Calculate median value for a specific coordinate index in point cloud
+   * @param points Vector of points (each point is vector of coordinates)
+   * @param idx Coordinate index (0=x, 1=y, 2=z)
+   * @return Median value of the specified coordinate
+   */
   double getMedian(const std::vector<std::vector<double>> &points, int idx) const;
 
+  /**
+   * @brief Publish filtered points (non-ground) for visualization
+   * @param cloud Point cloud containing filtered points after RANSAC
+   */
+  void publishFilteredPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
   /**
-   * @brief Publishes a marker array
-   * @param type Type of marker
-   * @param ns namespace
-   * @param frame_id frame_id
-   * @param position_colours a vector with shape (2,n,3), where 1st dimension 1st(0th index) row contains (x,y,z) and 2nd(1st index) row contains (r,g,b) of n data points
-   * @param publisher publisher object
-   * @param del_markers Bool, true if markers to be deleted after each publish, else false
-   * @param scales dimensions of the marker
-   * @return void
+   * @brief Publish cluster centers for visualization
+   * @param cluster_centers Vector of cluster center coordinates (x,y)
    */
-  void publishMarkerArray(
-    visualization_msgs::msg::Marker::_type_type type,
-    std::string ns,
-    std::string frame_id,
-    std::vector<std::vector<std::vector<double>>> positions_colours,
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher,
-    bool del_markers,
-    std::vector<double> scales,
-    const rclcpp::Time& stamp
-  );
+  void publishLidarClusters(const std::vector<std::vector<double>>& cluster_centers);
 
-  
+  /**
+   * @brief Classify cone as yellow or blue based on intensity profile
+   * @param y_vals Intensity values (normalized)
+   * @param x_vals Z-coordinate values
+   * @return true if yellow cone, false if blue cone
+   */
   bool classifyCone(const std::vector<double>& y_vals, const std::vector<double>& x_vals);
 
+  /**
+   * @brief Apply moving average filter to smooth intensity data
+   * @param data Input data vector
+   * @param kernel Kernel size for moving average
+   * @return Smoothed data vector
+   */
   std::vector<double> movingAverage(const std::vector<double>& data, int kernel);
 
 public:
   /**
-   * @brief constructor
+   * @brief Constructor - initializes node, parameters, publishers and subscribers
    */
   ProcessLidar();
 
   /**
-   * @brief destructor
+   * @brief Destructor - cleans up resources
    */
   ~ProcessLidar();
 };

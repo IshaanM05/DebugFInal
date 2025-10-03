@@ -35,30 +35,8 @@ add_definitions(${PCL_DEFINITIONS})
 add_executable(process_lidar
   src/process_lidar.cpp
   src/main.cpp)
-ament_target_dependencies(process_lidar rclcpp sensor_msgs visualization_msgs pcl_conversions dv_msgs)
+ament_target_dependencies(process_lidar rclcpp sensor_msgs visualization_msgs pcl_conversions dv_msgs std_msgs)
 target_link_libraries(process_lidar Open3D::Open3D Eigen3::Eigen ${PCL_LIBRARIES}) # As it's not a ros2 package
-
-# --- ADDED: Executable for the new feature extraction node ---
-# --- CHANGE: Added the required main source file for this executable ---
-add_executable(feature_extractor 
-  src/feature_extractor.cpp
-  src/feature_extractor_main.cpp)
-target_include_directories(feature_extractor PRIVATE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  ${PCL_INCLUDE_DIRS}
-  ${Eigen3_INCLUDE_DIRS}
-  ${Open3D_INCLUDE_DIRS}
-)
-ament_target_dependencies(feature_extractor
-  rclcpp
-  sensor_msgs
-  visualization_msgs
-)
-target_link_libraries(feature_extractor
-  ${PCL_LIBRARIES}
-  Open3D::Open3D
-  Eigen3::Eigen
-)
 
 ament_export_dependencies(dv_msgs)
 

@@ -30,40 +30,28 @@ ProcessLidar::ProcessLidar() : Node("process_lidar")
         std::bind(&ProcessLidar::lidar_raw_sub_callback, this, std::placeholders::_1)
     );
 
-    // For final classified cones
-    this->classified_cones_output_rviz_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-        this->classified_cones_output_rviz_topic,
+    // Publishers for visualization and downstream processing
+    this->detected_cones_pub = this->create_publisher<dv_msgs::msg::IndexedTrack>(
+        "/perception/cones",
         10
     );
-    this->detected_cones_pub = this->create_publisher<dv_msgs::msg::IndexedTrack>(
-    "/detected_cones",
-    10
+    
+    this->filtered_points_pub = this->create_publisher<std_msgs::msg::Float32MultiArray>(
+        "/perception/filtered_points",
+        10
+    );
+    
+    this->lidar_clusters_pub = this->create_publisher<std_msgs::msg::Float32MultiArray>(
+        "/perception/clusters",
+        10
     );
 
-
-    // // Publishers for debugging visualizations
-    // this->ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-    //     this->namespace_ + "/ground_points", 10);
-    // this->non_ground_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-    //     this->namespace_ + "/non_ground_points", 10);
-    // this->clustered_points_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-    //     this->namespace_ + "/clustered_points", 10);
-
-    // Initialize new RANSAC parameters
+    // Initialize RANSAC parameters
     this->min_z_normal_component = 0.80;
     this->max_slope_deviation_deg = 40.0;
 
-    // --- DEBUG LOGGER ---
     RCLCPP_INFO(this->get_logger(), "[DEBUG] Constructor finished.");
 }
-
-// double ProcessLidar::getMedian(const std::vector<std::vector<double>> &points, int idx) const {
-//     std::vector<double> vals;
-//     vals.reserve(points.size());
-//     for (const auto &pt : points) vals.push_back(pt[idx]);
-//     std::nth_element(vals.begin(), vals.begin() + vals.size()/2, vals.end());
-//     return vals[vals.size()/2];
-// }
 
 double ProcessLidar::getMedian(const std::vector<std::vector<double>> &points, int idx) const {
     if (points.empty()) return 0.0;
@@ -88,9 +76,50 @@ double ProcessLidar::getMedian(const std::vector<std::vector<double>> &points, i
     return median;
 }
 
+void ProcessLidar::publishFilteredPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
+{
+    if (!this->filtered_points_pub || cloud->points.empty()) {
+        RCLCPP_DEBUG(this->get_logger(), "Filtered points publisher not available or empty cloud");
+        return;
+    }
+
+    auto message = std_msgs::msg::Float32MultiArray();
+    
+    // Convert to the format [x1, y1, z1, x2, y2, z2, ...] that Python node expects
+    for (const auto& point : cloud->points) {
+        message.data.push_back(static_cast<float>(point.x));
+        message.data.push_back(static_cast<float>(point.y));
+        message.data.push_back(static_cast<float>(point.z));
+    }
+    
+    this->filtered_points_pub->publish(message);
+    RCLCPP_DEBUG(this->get_logger(), "[DEBUG] Published %zu filtered points to /perception/filtered_points", cloud->points.size());
+}
+
+void ProcessLidar::publishLidarClusters(const std::vector<std::vector<double>>& cluster_centers)
+{
+    if (!this->lidar_clusters_pub || cluster_centers.empty()) {
+        RCLCPP_DEBUG(this->get_logger(), "Lidar clusters publisher not available or empty clusters");
+        return;
+    }
+
+    auto message = std_msgs::msg::Float32MultiArray();
+    
+    // Convert to the format [x1, y1, x2, y2, ...] that Python node expects
+    // Using only x,y coordinates (2D) as shown in Python node
+    for (const auto& center : cluster_centers) {
+        if (center.size() >= 2) {  // Ensure we have at least x,y coordinates
+            message.data.push_back(static_cast<float>(center[0]));  // x coordinate
+            message.data.push_back(static_cast<float>(center[1]));  // y coordinate
+        }
+    }
+    
+    this->lidar_clusters_pub->publish(message);
+    RCLCPP_DEBUG(this->get_logger(), "[DEBUG] Published %zu cluster centers to /perception/clusters", cluster_centers.size());
+}
+
 ProcessLidar::~ProcessLidar()
 {
-    // --- DEBUG LOGGER ---
     RCLCPP_INFO(this->get_logger(), "[DEBUG] Destructor called. Shutting down.");
 }
 
@@ -112,22 +141,18 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
 
         RCLCPP_INFO(this->get_logger(), "[DEBUG] ---- lidar_raw_sub_callback entered ----");
         auto pipeline_start = std::chrono::steady_clock::now();
-        // RCLCPP_INFO(this->get_logger(), "[DEBUG] Received point cloud with %zu points.", msg->points.size());
 
         std::vector<std::vector<double>> positions, colors;
         std::vector<double> intensities;
         positions.reserve(msg->points.size());
         intensities.reserve(msg->points.size());
 
-        // --- New Code with Exclusion Box ---
+        // --- Car body exclusion and point cloud filtering ---
         auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         cloud->points.reserve(msg->points.size());
 
-        // Define the dimensions of the car's body relative to the LiDAR sensor
-        // Tune these values to match your car's geometry
         const double CAR_FRONT_X = 1.5;   // Ignore points closer than 1.5m in front
-        const double CAR_SIDE_Y  = 1.25;  // Ignore points within 0.9m to the left/right
-        //std::cout << "Car y = " << CAR_SIDE_Y << std::endl;
+        const double CAR_SIDE_Y  = 1.25;  // Ignore points within 1.25m to the left/right
 
         for (size_t i = 0; i < msg->points.size(); ++i) {
             const auto &pt = msg->points[i];
@@ -143,6 +168,7 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
             }
         }
 
+        // ROI filtering
         auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         pcl::PassThrough<pcl::PointXYZI> pass;
 
@@ -152,11 +178,11 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
         pass.filter(*cloud_filtered);
 
         pass.setInputCloud(cloud_filtered);
-        // pass.setInputCloud(cloud);
         pass.setFilterFieldName("z");
         pass.setFilterLimits(-0.63, 0.50);
         pass.filter(*cloud_filtered);
 
+        // --- RANSAC Ground Removal ---
         auto non_ground_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         auto ground_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         auto remaining_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>(*cloud_filtered);
@@ -177,82 +203,55 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
         std::optional<Eigen::Vector3f> reference_normal;
 
         while (remaining_cloud->points.size() > min_points_for_plane && iterations < max_iterations)
-    {
-        // Dynamically clamp max iterations based on remaining points
-        int dynamic_max_iter = std::min(static_cast<int>(remaining_cloud->points.size() / 200), max_iterations);
-        if (iterations >= dynamic_max_iter) break;
+        {
+            // Dynamically clamp max iterations based on remaining points
+            int dynamic_max_iter = std::min(static_cast<int>(remaining_cloud->points.size() / 200), max_iterations);
+            if (iterations >= dynamic_max_iter) break;
 
-        seg.setInputCloud(remaining_cloud);
-        seg.segment(*inliers, *coefficients);
+            seg.setInputCloud(remaining_cloud);
+            seg.segment(*inliers, *coefficients);
 
-        if (inliers->indices.empty()) break;
+            if (inliers->indices.empty()) break;
 
-        Eigen::Vector3f current_normal(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
-        if (current_normal.z() < 0) current_normal = -current_normal;
+            Eigen::Vector3f current_normal(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
+            if (current_normal.z() < 0) current_normal = -current_normal;
 
-        if (current_normal.z() < this->min_z_normal_component) break;
+            if (current_normal.z() < this->min_z_normal_component) break;
 
-        if (!reference_normal.has_value()) reference_normal = current_normal;
-        else {
-            double dot_product = current_normal.dot(reference_normal.value());
-            double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
-            double angle_deg = angle_rad * (180.0 / M_PI);
-            if (angle_deg > this->max_slope_deviation_deg) break;
+            if (!reference_normal.has_value()) reference_normal = current_normal;
+            else {
+                double dot_product = current_normal.dot(reference_normal.value());
+                double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
+                double angle_deg = angle_rad * (180.0 / M_PI);
+                if (angle_deg > this->max_slope_deviation_deg) break;
+            }
+
+            auto current_ground_plane = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+            extract.setInputCloud(remaining_cloud);
+            extract.setIndices(inliers);
+            extract.setNegative(false);
+            extract.filter(*current_ground_plane);
+            *ground_cloud += *current_ground_plane;
+
+            extract.setNegative(true);
+            auto next_remaining_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+            extract.filter(*next_remaining_cloud);
+            remaining_cloud = next_remaining_cloud;
+            iterations++;
         }
 
-        auto current_ground_plane = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-        extract.setInputCloud(remaining_cloud);
-        extract.setIndices(inliers);
-        extract.setNegative(false);
-        extract.filter(*current_ground_plane);
-        *ground_cloud += *current_ground_plane;
-
-        extract.setNegative(true);
-        auto next_remaining_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-        extract.filter(*next_remaining_cloud);
-        remaining_cloud = next_remaining_cloud;
-        iterations++;
-    }
-
         *non_ground_cloud = *remaining_cloud;
-        // --- DEBUG LOGGER ---
-    // RCLCPP_INFO(this->get_logger(), "[DEBUG] RANSAC complete. Ground points: %zu, Non-ground points: %zu", ground_cloud->size(), non_ground_cloud->size());
 
-    // Debugger 1: Visualize ground points
-    // std::vector<std::vector<double>> ground_positions, ground_colors;
-    // for (const auto& point : ground_cloud->points) {
-    //     ground_positions.push_back({point.x, point.y, point.z});
-    //     ground_colors.push_back({0.0, 1.0, 0.0});
-    // }
-    // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_ground", 
-    //     this->fixed_frame, {ground_positions, ground_colors}, this->ground_points_pub,
-    //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
+        // --- PUBLISH FILTERED POINTS FOR VISUALIZATION ---
+        this->publishFilteredPoints(non_ground_cloud);
 
+        // Prepare for clustering
         for (const auto &point : non_ground_cloud->points) {
             positions.push_back({point.x, point.y, point.z});
             intensities.push_back(point.intensity);
         }
-        
-        // Debugger 2: Visualize non-ground points
-        // std::vector<std::vector<double>> non_ground_colors;
-        // for (size_t i = 0; i < positions.size(); ++i) {
-        //     non_ground_colors.push_back({1.0, 1.0, 1.0});
-        // }
-        // this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_non_ground",
-        //     this->fixed_frame, {positions, non_ground_colors}, this->non_ground_points_pub,
-        //     true, {0.05, 0.05, 0.05}, msg->header.stamp);
 
-        // if (positions.empty()) {
-        //     // RCLCPP_INFO(this->get_logger(), "[DEBUG] No non-ground points to cluster. Exiting callback.");
-        //     this->publishMarkerArray(visualization_msgs::msg::Marker::CYLINDER, this->namespace_,
-        //         this->fixed_frame, {{}, {}}, this->classified_cones_output_rviz_pub,
-        //         true, {1, 1, 0.5}, msg->header.stamp);
-        //     this->publishMarkerArray(visualization_msgs::msg::Marker::SPHERE, this->namespace_ + "_clustered",
-        //         this->fixed_frame, {{}, {}}, this->clustered_points_pub, true, {0.05, 0.05, 0.05}, msg->header.stamp);
-        //     return;
-        // }
-
-
+        // --- DBSCAN Clustering ---
         auto o3d_pcd = std::make_shared<open3d::geometry::PointCloud>();
         o3d_pcd->points_.reserve(positions.size());
         for (const auto &point : positions) {
@@ -269,42 +268,33 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
             classified_points[label].push_back({positions[index][0], positions[index][1], positions[index][2], intensities[index]});
         }
 
-    // ------------------- ADD PRUNING HERE -------------------
-    for (auto it = classified_points.begin(); it != classified_points.end();) {
-        auto &cluster = *it;
+        // --- Cluster Pruning ---
+        for (auto it = classified_points.begin(); it != classified_points.end();) {
+            auto &cluster = *it;
 
-        // Compute bounding box
-        double min_x = cluster[0][0], max_x = cluster[0][0];
-        double min_y = cluster[0][1], max_y = cluster[0][1];
-        double min_z = cluster[0][2], max_z = cluster[0][2];
+            // Compute bounding box
+            double min_x = cluster[0][0], max_x = cluster[0][0];
+            double min_y = cluster[0][1], max_y = cluster[0][1];
+            double min_z = cluster[0][2], max_z = cluster[0][2];
 
-        for (auto &pt : cluster) {
-            min_x = std::min(min_x, pt[0]); max_x = std::max(max_x, pt[0]);
-            min_y = std::min(min_y, pt[1]); max_y = std::max(max_y, pt[1]);
-            min_z = std::min(min_z, pt[2]); max_z = std::max(max_z, pt[2]);
-        }
-
-        double height = max_z - min_z;
-        double width  = std::max(max_x - min_x, max_y - min_y);
-
-        // Reject clusters outside expected cone size
-        if (height < 0.15 || height > 0.4 || width > 0.45) {
-            it = classified_points.erase(it);
-            continue;
-        }
-
-        ++it;
-    }
-    // ------------------- PRUNING DONE -------------------
-
-        std::vector<std::vector<double>> clustered_positions, clustered_colors;
-        for (const auto &cluster : classified_points) {
-            for (const auto &point : cluster) {
-                clustered_positions.push_back({point[0] + 2.921, point[1], point[2]});
-                clustered_colors.push_back({1.0, 0.0, 1.0});
+            for (auto &pt : cluster) {
+                min_x = std::min(min_x, pt[0]); max_x = std::max(max_x, pt[0]);
+                min_y = std::min(min_y, pt[1]); max_y = std::max(max_y, pt[1]);
+                min_z = std::min(min_z, pt[2]); max_z = std::max(max_z, pt[2]);
             }
+
+            double height = max_z - min_z;
+            double width  = std::max(max_x - min_x, max_y - min_y);
+
+            // Reject clusters outside expected cone size
+            if (height < 0.15 || height > 0.4 || width > 0.45) {
+                it = classified_points.erase(it);
+                continue;
+            }
+            ++it;
         }
 
+        // --- Cone Detection and Classification ---
         for (auto &cone_class : classified_points) {
             std::sort(cone_class.begin(), cone_class.end(),
                       [](const std::vector<double> &v1, const std::vector<double> &v2) -> bool {
@@ -314,6 +304,8 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
 
         colors.clear();
         positions.clear();
+
+        std::vector<std::vector<double>> cluster_centers;
 
         for (auto &class_ : classified_points) {
             int class_size = class_.size();
@@ -325,15 +317,6 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
             z_vals.reserve(class_size);
 
             const double CONE_BASE_RADIUS = 0.12;
-
-            // auto min_x_it = std::min_element(class_.begin(), class_.end(),
-            //                                  [](const std::vector<double> &a, const std::vector<double> &b) {
-            //                                      return a[0] < b[0];
-            //                                  });
-
-            // double cone_x = (*min_x_it)[0] + CONE_BASE_RADIUS + 1.532;
-            // double cone_y = (*min_x_it)[1];
-            // double cone_z = 0.1629;
 
             // Compute min X and min/max Y
             double min_x = class_[0][0];
@@ -348,16 +331,17 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
             double median_x = getMedian(class_, 0);
             double median_y = getMedian(class_, 1);
 
-            // Weighted blend for X: median_x and min_x + CONE_BASE_RADIUS
+            // Weighted blend for cone position
             const double w_median = 0.7;
             const double w_min_x  = 0.3;
             const double w_min_y  = 0.3;
 
-            double cone_x = w_median * median_x + w_min_x * (min_x + CONE_BASE_RADIUS) + 1.532; // LiDAR offset
+            double cone_x = w_median * median_x + w_min_x * (min_x + CONE_BASE_RADIUS);
             double cone_y = w_median * median_y + w_min_y * (min_y + CONE_BASE_RADIUS);   
             double cone_z = 0.1629;     // cones assumed on ground
 
-
+            // STORE THE FINAL CONE POSITION FOR CLUSTER VISUALIZATION
+            cluster_centers.push_back({cone_x, cone_y});  
 
             for (auto &pt : class_) {
                 intensity_vals.push_back(pt.at(3));
@@ -371,31 +355,32 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
             positions.push_back({cone_x, cone_y, cone_z});
 
             if (this->classifyCone(averaged_intensity_vals, z_vals)) {
-                colors.push_back({1.0, 1.0, 0.0});
+                colors.push_back({1.0, 1.0, 0.0}); // Yellow
             } else {
-                colors.push_back({0.0, 0.0, 1.0});
+                colors.push_back({0.0, 0.0, 1.0}); // Blue
             }
         }
 
-        this->publishMarkerArray(
-            visualization_msgs::msg::Marker::CYLINDER,
-            this->namespace_,
-            this->fixed_frame,
-            {positions, colors},
-            this->classified_cones_output_rviz_pub,
-            true,
-            {0.1, 0.1, 0.5},
-            msg->header.stamp);
+        this->publishLidarClusters(cluster_centers);
 
-        // ---------------- Publish IndexedTrack ----------------
+        // --- Publish Final Detected Cones ---
         if (this->detected_cones_pub) {
             dv_msgs::msg::IndexedTrack track_msg;
             track_msg.track.clear();
             for (size_t i = 0; i < positions.size(); ++i) {
                 dv_msgs::msg::IndexedCone cone_msg;
-                cone_msg.location.x = positions[i][0];
-                cone_msg.location.y = positions[i][1];
-                cone_msg.location.z = positions[i][2];
+                
+                // Convert Cartesian (x,y) to Polar (range, angle)
+                double x = positions[i][0];
+                double y = positions[i][1];
+                double z = positions[i][2];
+                
+                double range = sqrt(x * x + y * y);
+                double angle = atan2(y, x);
+                
+                cone_msg.location.x = range;    // Range/distance
+                cone_msg.location.y = angle;    // Angle in radians
+                cone_msg.location.z = z;        // Keep Z as is (height)
 
                 if (colors[i][0] == 1.0 && colors[i][1] == 1.0)
                     cone_msg.color = dv_msgs::msg::IndexedCone::YELLOW;
@@ -420,72 +405,6 @@ void ProcessLidar::lidar_raw_sub_callback(const sensor_msgs::msg::PointCloud::Sh
     } catch (...) {
         RCLCPP_ERROR(this->get_logger(), "Unknown exception in lidar_raw_sub_callback");
     }
-}
-
-void ProcessLidar::publishMarkerArray(
-    visualization_msgs::msg::Marker::_type_type type,
-    std::string ns,
-    std::string frame_id,
-    std::vector<std::vector<std::vector<double>>> positions_colours,
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher,
-    bool del_markers,
-    std::vector<double> scales,
-    const rclcpp::Time &stamp)
-{
-    if (!publisher) { return; }
-
-    visualization_msgs::msg::MarkerArray marker_array;
-
-    if (del_markers) {
-        visualization_msgs::msg::Marker del_marker;
-        del_marker.action = visualization_msgs::msg::Marker::DELETEALL;
-        marker_array.markers.push_back(del_marker);
-    }
-
-    visualization_msgs::msg::Marker marker;
-    marker.header.frame_id = frame_id;
-    marker.header.stamp = stamp;
-    marker.ns = ns;
-    marker.type = type;
-    marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.pose.orientation.w = 1.0;
-    marker.scale.x = scales.at(0);
-    marker.scale.y = scales.at(1);
-    marker.scale.z = scales.at(2);
-
-    for (size_t i = 0; i < positions_colours.at(0).size(); i++) {
-        double x = positions_colours.at(0).at(i).at(0);
-        double y = positions_colours.at(0).at(i).at(1);
-        double z = positions_colours.at(0).at(i).at(2);
-
-        if ((x < 4.0)) {
-            continue; // skip this marker
-        }
-
-        marker.id = i;
-        marker.pose.position.x = x;
-        marker.pose.position.y = y;
-        marker.pose.position.z = z;
-        marker.color.a = 1.0;
-        marker.color.r = positions_colours.at(1).at(i).at(0);
-        marker.color.g = positions_colours.at(1).at(i).at(1);
-        marker.color.b = positions_colours.at(1).at(i).at(2);
-        // marker.color.r = 0.0;  // red
-        // marker.color.g = 1.0;  // green
-        // marker.color.b = 0.0;  // blue
-
-        marker_array.markers.push_back(marker);
-
-        // std::cout << "Published marker at ("
-        //           << marker.pose.position.x << ", "
-        //           << marker.pose.position.y << ", "
-        //           << marker.pose.position.z << ") with color ("
-        //           << marker.color.r << ", "
-        //           << marker.color.g << ", "
-        //           << marker.color.b << ")\n";
-    }
-
-    publisher->publish(marker_array);
 }
 
 bool ProcessLidar::classifyCone(const std::vector<double> &y_vals, const std::vector<double> &x_vals)
