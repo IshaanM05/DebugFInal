@@ -1,120 +1,103 @@
-/**
- * @file process_lidar.hpp
- * @brief Header (Declaration / Interface) file for the LiDAR processing node
- * @author Siddhesh Phadke
- */
-
-#ifndef PROCESS_LIDAR_HPP
-#define PROCESS_LIDAR_HPP
+#ifndef PROCESS_LIDAR_HPP_
+#define PROCESS_LIDAR_HPP_
 
 #include "rclcpp/rclcpp.hpp"
-#include "visualization_msgs/msg/marker_array.hpp"
-#include "visualization_msgs/msg/marker.hpp"
-#include <sensor_msgs/msg/point_cloud.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
-#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include "sensor_msgs/msg/point_cloud.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/point_cloud2_iterator.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include "dv_msgs/msg/indexed_track.hpp"
 #include "dv_msgs/msg/indexed_cone.hpp"
-#include "std_msgs/msg/float32_multi_array.hpp"
-#include <pcl/point_types.h>
+
 #include <pcl/point_cloud.h>
-#include <Eigen/Dense>
+#include <pcl/point_types.h>
 #include <vector>
 #include <array>
 
-/**
- * @brief LiDAR Processing Node Class
- */
+// Constants used in the cpp file
+const std::string LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
+const std::string LIDAR_RAW_TOPIC2 = "/carmaker/pointcloud2";
+
+// Ground removal parameters from working code
+constexpr double RANSAC_THRESHOLD = 0.10;
+constexpr double MIN_Z_NORMAL_COMPONENT = 0.80;
+constexpr double MAX_SLOPE_DEVIATION_DEG = 40.0;
+constexpr int MAX_GROUND_ITERATIONS = 8;
+constexpr size_t MIN_POINTS_FOR_PLANE = 150;
+
+// Clustering parameters from working code
+constexpr double DBSCAN_EPSILON = 0.20;
+constexpr int DBSCAN_MINPOINTS = 4;
+
+// ROI values from working code
+constexpr double ROI_Y_MIN = -3.50;
+constexpr double ROI_Y_MAX = 3.50;
+constexpr double ROI_Z_MIN = -0.63;
+constexpr double ROI_Z_MAX = 0.50;
+
+// Car body dimensions from working code
+constexpr double CAR_FRONT_X = 1.5;
+constexpr double CAR_SIDE_Y = 1.25;
+
+// Cone parameters from working code
+constexpr double CONE_BASE_RADIUS = 0.12;
+constexpr double LIDAR_OFFSET = 1.532;
+constexpr double CONE_HEIGHT = 0.1629;
+
 class ProcessLidar : public rclcpp::Node {
-private:
-  // Pre-define common types for better performance
-  using Point3D = std::array<double, 3>;  // x, y, z
-  using Point4D = std::array<double, 4>;  // x, y, z, intensity
-  using Cluster = std::vector<Point4D>;
-
-  // Configuration
-  static constexpr const char* NAMESPACE_ = "process_lidar";
-  static constexpr const char* FIXED_FRAME = "Fr1A";
-  
-  // Algorithm parameters
-  static constexpr double DBSCAN_EPSILON = 0.20;
-  static constexpr int DBSCAN_MINPOINTS = 3;
-  static constexpr double RANSAC_THRESHOLD = 0.015;
-  static constexpr double MIN_Z_NORMAL_COMPONENT = 0.80;
-  static constexpr double MAX_SLOPE_DEVIATION_DEG = 40.0;
-  
-  // Ground removal parameters (matching working code)
-  static constexpr int MAX_GROUND_ITERATIONS = 8;
-  static constexpr size_t MIN_POINTS_FOR_PLANE = 150;
-  
-  // Geometry constraints
-  static constexpr double CAR_FRONT_X = 1.5;
-  static constexpr double CAR_SIDE_Y = 1.25;
-  static constexpr double ROI_Y_MIN = -3.50;
-  static constexpr double ROI_Y_MAX = 3.50;
-  static constexpr double ROI_Z_MIN = -0.63;
-  static constexpr double ROI_Z_MAX = 0.50;
-  static constexpr double CONE_BASE_RADIUS = 0.12;
-  static constexpr double CONE_HEIGHT = 0.1629;
-  
-  // Cone size validation
-  static constexpr double MIN_CONE_HEIGHT = 0.15;
-  static constexpr double MAX_CONE_HEIGHT = 0.4;
-  static constexpr double MAX_CONE_WIDTH = 0.45;
-  static constexpr int MIN_CLUSTER_POINTS = 4;
-
-  // ROS 2 topics
-  static constexpr const char* LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
-  static constexpr const char* LIDAR_RAW_TOPIC2 = "/carmaker/pointcloud2";
-
-  // Publishers and Subscribers
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud>::SharedPtr lidar_raw_input_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_raw_input_sub2_;
-  rclcpp::Publisher<dv_msgs::msg::IndexedTrack>::SharedPtr detected_cones_pub_;
-  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr filtered_points_pub_;
-  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lidar_clusters_pub_;
-
-  // Reusable containers to avoid allocations
-  pcl::PointCloud<pcl::PointXYZI>::Ptr reusable_cloud_;
-  pcl::PointCloud<pcl::PointXYZI>::Ptr reusable_cloud_filtered_;
-
-private:
-  // Core processing functions
-  void processPointCloudData(std::vector<Point4D>& points, const std_msgs::msg::Header& header);
-  
-  // Message processing
-  std::vector<Point4D> extractPointsFromPointCloud2(const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg);
-  std::vector<Point4D> extractPointsFromPointCloud(const sensor_msgs::msg::PointCloud::SharedPtr cloud_msg);
-  
-  // Processing pipeline stages
-  bool filterCarBodyAndROI(const std::vector<Point4D>& input_points, 
-                          pcl::PointCloud<pcl::PointXYZI>::Ptr output_cloud);
-  bool removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
-                        pcl::PointCloud<pcl::PointXYZI>::Ptr non_ground_cloud);
-  std::vector<Cluster> clusterPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
-  std::vector<Cluster> filterClustersBySize(const std::vector<Cluster>& clusters);
-  void detectConesInClusters(const std::vector<Cluster>& clusters,
-                            std::vector<Point3D>& positions,
-                            std::vector<int>& colors);
-  
-  // Helper functions
-  double getMedian(const Cluster& points, size_t idx) const;
-  Point3D calculateConePosition(const Cluster& cluster);
-  bool classifyCone(const std::vector<double>& intensities, const std::vector<double>& z_values);
-  std::vector<double> movingAverage(const std::vector<double>& data, int kernel = 3);
-  
-  // Publishing functions
-  void publishFilteredPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
-  void publishLidarClusters(const std::vector<Point3D>& cluster_centers);
-  void publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors);
-
-  // Callbacks
-  void lidarRawCallback(const sensor_msgs::msg::PointCloud::SharedPtr msg);
-  void lidarRawCallback2(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-
 public:
-  ProcessLidar();
-  ~ProcessLidar();
+    ProcessLidar();
+    ~ProcessLidar();
+
+private:
+    // Type aliases for clarity
+    using Point4D = std::array<double, 4>; // x, y, z, intensity
+    using Point3D = std::array<double, 3>; // x, y, z
+    using Cluster = std::vector<Point4D>;
+
+    // Callbacks
+    void lidarRawCallback(const sensor_msgs::msg::PointCloud::SharedPtr msg);
+    void lidarRawCallback2(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+
+    // Main processing pipeline
+    void processPointCloudData(std::vector<Point4D>& points, const std_msgs::msg::Header& header);
+
+    // Helper functions for data extraction
+    std::vector<Point4D> extractPointsFromPointCloud(const sensor_msgs::msg::PointCloud::SharedPtr cloud_msg);
+    std::vector<Point4D> extractPointsFromPointCloud2(const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg);
+
+    // Processing stages
+    bool filterCarBodyAndROI(const std::vector<Point4D>& input_points, pcl::PointCloud<pcl::PointXYZI>::Ptr output_cloud);
+    bool removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr non_ground_cloud);
+    std::vector<Cluster> clusterPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
+    std::vector<Cluster> filterClustersBySize(const std::vector<Cluster>& clusters);
+    void detectConesInClusters(const std::vector<Cluster>& clusters, std::vector<Point3D>& positions, std::vector<int>& colors);
+    
+    // Cone position calculation
+    Point3D calculateConePosition(const Cluster& cluster);
+    
+    // Math and classification helpers
+    double getMedian(const Cluster& points, size_t idx) const;
+    bool classifyCone(const std::vector<double>& y_vals, const std::vector<double>& x_vals);
+    std::vector<double> movingAverage(const std::vector<double>& data, int kernel);
+
+    // Publishers
+    void publishFilteredPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
+    void publishLidarClusters(const std::vector<Point3D>& cluster_centers);
+    void publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors);
+
+    // Subscribers
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud>::SharedPtr lidar_raw_input_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_raw_input_sub2_;
+
+    // Publisher objects
+    rclcpp::Publisher<dv_msgs::msg::IndexedTrack>::SharedPtr detected_cones_pub_;
+    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr filtered_points_pub_;
+    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lidar_clusters_pub_;
+
+    // Reusable PCL clouds
+    pcl::PointCloud<pcl::PointXYZI>::Ptr reusable_cloud_;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr reusable_cloud_filtered_;
 };
 
-#endif // PROCESS_LIDAR_HPP
+#endif // PROCESS_LIDAR_HPP_
