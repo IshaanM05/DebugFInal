@@ -9,29 +9,23 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <!-- Build and run dependencies -->
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>dv_msgs</depend>
+  <depend>pcl_conversions</depend>
+
+  <!-- System dependencies -->
+  <depend>libopen3d-dev</depend>
+  <depend>libeigen3-dev</depend>
+  <depend>libpcl-dev</depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
-
-    <!-- Added by the author-->
-    <depend>rclcpp</depend>
-    <depend>sensor_msgs</depend>
-    <depend>visualization_msgs</depend>
-    <depend>Open3D</depend>
-    <depend>Eigen</depend>
-    <depend>pcl_conversions</depend>
-    <depend>pcl_msgs</depend>
-    <depend>libpcl-all-dev</depend>
-    <depend>libeigen3-dev</depend>
-    <depend>libopen3d-dev</depend>
-    <depend>dv_msgs</depend>
-
-    <!-- END -->
-
   </export>
-
-
-
 </package>
