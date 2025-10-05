@@ -140,12 +140,12 @@ void ConeSeenVisualNode::cones_seen_visualisation(const dv_msgs::msg::IndexedTra
         // marker.lifetime = rclcpp::Duration::from_seconds(2.0);
 
         // Convert from local polar to local cartesian
-        // double local_x = cone.location.x * std::cos(cone.location.y);
-        // double local_y = cone.location.x * std::sin(cone.location.y);
+        double local_x = cone.location.x * std::cos(cone.location.y);
+        double local_y = cone.location.x * std::sin(cone.location.y);
 
         // cone.location.x is now Cartesian X, cone.location.y is now Cartesian Y.
-        double local_x = cone.location.x;
-        double local_y = cone.location.y;
+        // double local_x = cone.location.x;
+        // double local_y = cone.location.y;
 
         if (frame_id_ == "map") {
             // Rotate to map frame and translate

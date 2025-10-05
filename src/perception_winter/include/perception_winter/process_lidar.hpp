@@ -19,7 +19,7 @@ const std::string LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
 const std::string LIDAR_RAW_TOPIC2 = "/carmaker/pointcloud2";
 
 // Ground removal parameters from working code
-constexpr double RANSAC_THRESHOLD = 0.10;
+constexpr double RANSAC_THRESHOLD = 0.015;
 constexpr double MIN_Z_NORMAL_COMPONENT = 0.80;
 constexpr double MAX_SLOPE_DEVIATION_DEG = 40.0;
 constexpr int MAX_GROUND_ITERATIONS = 8;
@@ -27,7 +27,7 @@ constexpr size_t MIN_POINTS_FOR_PLANE = 150;
 
 // Clustering parameters from working code
 constexpr double DBSCAN_EPSILON = 0.20;
-constexpr int DBSCAN_MINPOINTS = 4;
+constexpr int DBSCAN_MINPOINTS = 3;
 
 // ROI values from working code
 constexpr double ROI_Y_MIN = -3.50;

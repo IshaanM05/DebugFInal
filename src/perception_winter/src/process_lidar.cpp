@@ -19,8 +19,9 @@
 ProcessLidar::ProcessLidar() : Node("process_lidar")
 {
     // Initialize reusable containers
-    reusable_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-    reusable_cloud_filtered_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    // CHANGE: Commented out to prevent reuse. Fresh clouds will be created in the callback.
+    // reusable_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    // reusable_cloud_filtered_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
 
     // Subscribers
     lidar_raw_input_sub_ = create_subscription<sensor_msgs::msg::PointCloud>(
@@ -113,27 +114,32 @@ void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std
     
     if (points.empty()) return;
 
+    // --- CHANGE HERE ---
+    // Create fresh, local point clouds for this specific scan to avoid stale metadata issues.
+    auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+
     auto pipeline_start = std::chrono::steady_clock::now();
     
     // Stage 1: Filtering
-    reusable_cloud_->clear();
-    if (!filterCarBodyAndROI(points, reusable_cloud_)) {
+    // reusable_cloud_->clear(); // No longer needed
+    if (!filterCarBodyAndROI(points, cloud)) { // Use local 'cloud'
         RCLCPP_DEBUG(get_logger(), "No points after car body and ROI filtering");
         return;
     }
 
     // Stage 2: Ground removal
-    reusable_cloud_filtered_->clear();
-    if (!removeGroundPlane(reusable_cloud_, reusable_cloud_filtered_)) {
+    // reusable_cloud_filtered_->clear(); // No longer needed
+    if (!removeGroundPlane(cloud, cloud_filtered)) { // Use local 'cloud' and 'cloud_filtered'
         RCLCPP_DEBUG(get_logger(), "No points after ground removal");
         return;
     }
 
     // Publish filtered points for visualization
-    // publishFilteredPoints(reusable_cloud_filtered_);
+    // publishFilteredPoints(cloud_filtered);
 
     // Stage 3: Clustering
-    auto clusters = clusterPoints(reusable_cloud_filtered_);
+    auto clusters = clusterPoints(cloud_filtered); // Use local 'cloud_filtered'
     if (clusters.empty()) {
         RCLCPP_DEBUG(get_logger(), "No clusters found");
         return;
@@ -181,15 +187,15 @@ bool ProcessLidar::filterCarBodyAndROI(const std::vector<Point4D>& input_points,
     }
 
     // Second pass: ROI filtering using PassThrough (matching working code)
-    auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    auto cloud_filtered_pass = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
     pcl::PassThrough<pcl::PointXYZI> pass;
 
     pass.setInputCloud(output_cloud);
     pass.setFilterFieldName("y");
     pass.setFilterLimits(ROI_Y_MIN, ROI_Y_MAX);
-    pass.filter(*cloud_filtered);
+    pass.filter(*cloud_filtered_pass);
 
-    pass.setInputCloud(cloud_filtered);
+    pass.setInputCloud(cloud_filtered_pass);
     pass.setFilterFieldName("z");
     pass.setFilterLimits(ROI_Z_MIN, ROI_Z_MAX);
     pass.filter(*output_cloud);
@@ -308,7 +314,7 @@ std::vector<ProcessLidar::Cluster> ProcessLidar::filterClustersBySize(const std:
     valid_clusters.reserve(clusters.size());
 
     for (const auto& cluster : clusters) {
-        if (cluster.size() < DBSCAN_MINPOINTS) continue;
+        if (cluster.size() < 4) continue; // Using 4 to match stable code logic
 
         // Compute bounding box exactly like working code
         double min_x = cluster[0][0], max_x = cluster[0][0];
@@ -408,7 +414,7 @@ double ProcessLidar::getMedian(const Cluster& points, size_t idx) const
 
     // Create indices and use nth_element like working code
     std::vector<size_t> indices(points.size());
-    for (size_t i = 0; i < points.size(); ++i) indices[i] = i;
+    std::iota(indices.begin(), indices.end(), 0);
 
     size_t mid = indices.size() / 2;
     std::nth_element(indices.begin(), indices.begin() + mid, indices.end(),
@@ -417,10 +423,10 @@ double ProcessLidar::getMedian(const Cluster& points, size_t idx) const
     double median = points[indices[mid]][idx];
 
     // For even-sized clusters, average middle two (like working code)
-    if (indices.size() % 2 == 0) {
-        size_t max_lower_idx = *std::max_element(indices.begin(), indices.begin() + mid,
+    if (indices.size() % 2 == 0 && mid > 0) {
+        auto max_it = std::max_element(indices.begin(), indices.begin() + mid,
             [&points, idx](size_t a, size_t b) { return points[a][idx] < points[b][idx]; });
-        median = 0.5 * (median + points[max_lower_idx][idx]);
+        median = 0.5 * (median + points[*max_it][idx]);
     }
 
     return median;
@@ -509,17 +515,21 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
         double x = positions[i][0];
         double y = positions[i][1];
         double z = positions[i][2];
+
+        if (x < 3.35) continue; // skip this marker
+        if (x > 10) continue; // Ignore very far cones
+
         
         // Convert to polar coordinates (range and angle) as in current code
-        // double range = sqrt(x * x + y * y);
-        // double angle = atan2(y, x);
+        double range = sqrt(x * x + y * y);
+        double angle = atan2(y, x);
         
-        // cone_msg.location.x = range;
-        // cone_msg.location.y = angle;
+        cone_msg.location.x = range;
+        cone_msg.location.y = angle;
         // --- CHANGE HERE ---
         // Publish the final Cartesian coordinates directly, just like the stable code.
-        cone_msg.location.x = x;
-        cone_msg.location.y = y;
+        // cone_msg.location.x = x;
+        // cone_msg.location.y = y;
         cone_msg.location.z = z;
         cone_msg.color = colors[i];
         cone_msg.index = i;
