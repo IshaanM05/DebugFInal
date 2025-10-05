@@ -12,25 +12,21 @@ ConeSeenVisualNode::ConeSeenVisualNode() : Node("coneseen_visuals")
     this->declare_parameter<std::string>("frame_id", "Fr1A");
     this->get_parameter("frame_id", frame_id_);
 
-    // QoS Profile
+    // QoS Profile - USE IT!
     auto qos = rclcpp::QoS(10);
 
-    // Subscribers
+    // Subscribers - use the QoS
     filtered_points_sub_ = this->create_subscription<dv_msgs::msg::IndexedTrack>(
-        "/perception/cones", 10, std::bind(&ConeSeenVisualNode::cones_seen_visualisation, this, _1));
+        "/perception/cones", qos, std::bind(&ConeSeenVisualNode::cones_seen_visualisation, this, _1));
 
-    // Start by subscribing to ground truth
-    // ground_truth_sub_ = this->create_subscription<eufs_msgs::msg::CarState>(
-    //     "/ground_truth/state", qos, std::bind(&ConeSeenVisualNode::car_state_callback, this, _1));
-    // RCLCPP_INFO(this->get_logger(), "Subscribed to /ground_truth/state");
-
-    // Publisher
+    // Publisher - use the QoS
     filtered_points_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-        "/perception/cones_visualise", 10);
+        "/perception/cones_visualise", qos);
     
-    // // Timer to check for SLAM topic
-    // slam_check_timer_ = this->create_wall_timer(
-    //     std::chrono::seconds(1), std::bind(&ConeSeenVisualNode::check_for_slam_topic, this));
+    // Initialize position variables to avoid potential use of uninitialized values
+    x_ = 0.0;
+    y_ = 0.0;
+    yaw_ = 0.0;
 }
 
 double ConeSeenVisualNode::quaternion_to_yaw(const geometry_msgs::msg::Quaternion& q)
@@ -91,13 +87,23 @@ void ConeSeenVisualNode::cones_seen_visualisation(const dv_msgs::msg::IndexedTra
     visualization_msgs::msg::MarkerArray cones_seen_array;
     auto timestamp = this->get_clock()->now();
 
-    int id_counter = 0;
+    // First, delete all previous markers with unique ID
+    visualization_msgs::msg::Marker delete_all_marker;
+    delete_all_marker.header.frame_id = frame_id_;
+    delete_all_marker.header.stamp = timestamp;
+    delete_all_marker.ns = "cone_visualization";
+    delete_all_marker.id = 0;  // Unique ID for DELETEALL marker
+    delete_all_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+    cones_seen_array.markers.push_back(delete_all_marker);
+
+    // Then add new cones with unique IDs starting from 1
+    int id_counter = 1;  // Start from 1 to avoid conflict with DELETEALL marker (id=0)
     for (const auto& cone : msg->track) {
         visualization_msgs::msg::Marker marker;
         marker.header.frame_id = frame_id_;
         marker.header.stamp = timestamp;
         marker.ns = "cone_visualization";
-        marker.id = id_counter++;
+        marker.id = id_counter++;  // Increment ID for each cone
         marker.type = visualization_msgs::msg::Marker::SPHERE;
         marker.action = visualization_msgs::msg::Marker::ADD;
         
@@ -130,11 +136,16 @@ void ConeSeenVisualNode::cones_seen_visualisation(const dv_msgs::msg::IndexedTra
                 break;
         }
 
-        marker.lifetime = rclcpp::Duration::from_seconds(2.0);
+        // Remove lifetime since we're deleting all markers on each update
+        // marker.lifetime = rclcpp::Duration::from_seconds(2.0);
 
         // Convert from local polar to local cartesian
-        double local_x = cone.location.x * std::cos(cone.location.y);
-        double local_y = cone.location.x * std::sin(cone.location.y);
+        // double local_x = cone.location.x * std::cos(cone.location.y);
+        // double local_y = cone.location.x * std::sin(cone.location.y);
+
+        // cone.location.x is now Cartesian X, cone.location.y is now Cartesian Y.
+        double local_x = cone.location.x;
+        double local_y = cone.location.y;
 
         if (frame_id_ == "map") {
             // Rotate to map frame and translate
@@ -149,6 +160,6 @@ void ConeSeenVisualNode::cones_seen_visualisation(const dv_msgs::msg::IndexedTra
         cones_seen_array.markers.push_back(marker);
     }
     
-    RCLCPP_INFO(this->get_logger(), "Number of cones Visualised = %zu", cones_seen_array.markers.size());
+    RCLCPP_INFO(this->get_logger(), "Number of cones Visualised = %zu", cones_seen_array.markers.size() - 1); // Subtract 1 for the DELETEALL marker
     filtered_points_pub_->publish(cones_seen_array);
 }

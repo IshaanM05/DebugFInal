@@ -37,8 +37,8 @@ ProcessLidar::ProcessLidar() : Node("process_lidar")
 
     // Publishers
     detected_cones_pub_ = create_publisher<dv_msgs::msg::IndexedTrack>("/perception/cones", 10);
-    filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
-    lidar_clusters_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/clusters", 10);
+    // filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
+    // lidar_clusters_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/clusters", 10);
 
     RCLCPP_INFO(get_logger(), "Optimized LiDAR Node started");
 }
@@ -130,7 +130,7 @@ void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std
     }
 
     // Publish filtered points for visualization
-    publishFilteredPoints(reusable_cloud_filtered_);
+    // publishFilteredPoints(reusable_cloud_filtered_);
 
     // Stage 3: Clustering
     auto clusters = clusterPoints(reusable_cloud_filtered_);
@@ -152,7 +152,7 @@ void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std
     detectConesInClusters(filtered_clusters, cone_positions, cone_colors);
 
     // Publish results
-    publishLidarClusters(cone_positions);
+    // publishLidarClusters(cone_positions);
     publishDetectedCones(cone_positions, cone_colors);
 
     auto pipeline_end = std::chrono::steady_clock::now();
@@ -468,31 +468,31 @@ std::vector<double> ProcessLidar::movingAverage(const std::vector<double> &data,
 }
 
 // Publish filtered points for visualization
-void ProcessLidar::publishFilteredPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
-{
-    if (!filtered_points_pub_ || cloud->points.empty()) return;
+// void ProcessLidar::publishFilteredPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+// {
+//     if (!filtered_points_pub_ || cloud->points.empty()) return;
 
-    auto message = std_msgs::msg::Float32MultiArray();
-    for (const auto& point : cloud->points) {
-        message.data.push_back(static_cast<float>(point.x));
-        message.data.push_back(static_cast<float>(point.y));
-        message.data.push_back(static_cast<float>(point.z));
-    }
-    filtered_points_pub_->publish(message);
-}
+//     auto message = std_msgs::msg::Float32MultiArray();
+//     for (const auto& point : cloud->points) {
+//         message.data.push_back(static_cast<float>(point.x));
+//         message.data.push_back(static_cast<float>(point.y));
+//         message.data.push_back(static_cast<float>(point.z));
+//     }
+//     filtered_points_pub_->publish(message);
+// }
 
-// Publish cluster centers
-void ProcessLidar::publishLidarClusters(const std::vector<Point3D>& cluster_centers)
-{
-    if (!lidar_clusters_pub_ || cluster_centers.empty()) return;
+// // Publish cluster centers
+// void ProcessLidar::publishLidarClusters(const std::vector<Point3D>& cluster_centers)
+// {
+//     if (!lidar_clusters_pub_ || cluster_centers.empty()) return;
 
-    auto message = std_msgs::msg::Float32MultiArray();
-    for (const auto& center : cluster_centers) {
-        message.data.push_back(static_cast<float>(center[0]));
-        message.data.push_back(static_cast<float>(center[1]));
-    }
-    lidar_clusters_pub_->publish(message);
-}
+//     auto message = std_msgs::msg::Float32MultiArray();
+//     for (const auto& center : cluster_centers) {
+//         message.data.push_back(static_cast<float>(center[0]));
+//         message.data.push_back(static_cast<float>(center[1]));
+//     }
+//     lidar_clusters_pub_->publish(message);
+// }
 
 // Publish detected cones - PRESERVING CURRENT OUTPUT FORMAT
 void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors)
@@ -511,11 +511,15 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
         double z = positions[i][2];
         
         // Convert to polar coordinates (range and angle) as in current code
-        double range = sqrt(x * x + y * y);
-        double angle = atan2(y, x);
+        // double range = sqrt(x * x + y * y);
+        // double angle = atan2(y, x);
         
-        cone_msg.location.x = range;
-        cone_msg.location.y = angle;
+        // cone_msg.location.x = range;
+        // cone_msg.location.y = angle;
+        // --- CHANGE HERE ---
+        // Publish the final Cartesian coordinates directly, just like the stable code.
+        cone_msg.location.x = x;
+        cone_msg.location.y = y;
         cone_msg.location.z = z;
         cone_msg.color = colors[i];
         cone_msg.index = i;
