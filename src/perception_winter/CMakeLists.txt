@@ -25,6 +25,7 @@ find_package(Eigen3 REQUIRED)
 # PCL library
 find_package(PCL REQUIRED COMPONENTS common io filters segmentation) 
 include_directories(${PCL_INCLUDE_DIRS})
+include_directories(include)
 add_definitions(${PCL_DEFINITIONS})
 
 # C++ standard
@@ -39,6 +40,11 @@ add_executable(process_lidar
   src/main.cpp
 )
 
+add_executable(cone_visualizer_node
+  src/cone_seen_visual_node.cpp
+  src/main_1.cpp
+)
+
 # Dependencies for process_lidar
 ament_target_dependencies(process_lidar 
   rclcpp 
@@ -48,6 +54,8 @@ ament_target_dependencies(process_lidar
   pcl_conversions 
   dv_msgs
 )
+
+ament_target_dependencies(cone_visualizer_node rclcpp visualization_msgs dv_msgs)
 
 # Link libraries for process_lidar
 target_link_libraries(process_lidar 
@@ -73,6 +81,7 @@ target_compile_definitions(process_lidar PRIVATE
 # Install executable
 install(TARGETS
   process_lidar
+  cone_visualizer_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
