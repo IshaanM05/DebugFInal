@@ -98,6 +98,12 @@ private:
     // Reusable PCL clouds
     pcl::PointCloud<pcl::PointXYZI>::Ptr reusable_cloud_;
     pcl::PointCloud<pcl::PointXYZI>::Ptr reusable_cloud_filtered_;
+
+    // --- CHANGES REQUIRED FOR ACCURACY METRICS ---
+    long true_positives_yellow_;
+    long false_positives_yellow_;
+    long true_positives_blue_;
+    long false_positives_blue_;
 };
 
 #endif // PROCESS_LIDAR_HPP_

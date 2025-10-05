@@ -16,8 +16,19 @@
 #include <pcl/ModelCoefficients.h>
 #include <chrono>
 
+// --- NEW: ACCURACY METRICS ---
+// Enum to represent the calculated ground truth color
+enum class GroundTruthColor { BLUE, YELLOW };
+
 ProcessLidar::ProcessLidar() : Node("process_lidar")
 {
+    // --- NEW: ACCURACY METRICS ---
+    // Initialize all performance counters to zero
+    true_positives_yellow_ = 0;
+    false_positives_yellow_ = 0;
+    true_positives_blue_ = 0;
+    false_positives_blue_ = 0;
+
     // Initialize reusable containers
     // CHANGE: Commented out to prevent reuse. Fresh clouds will be created in the callback.
     // reusable_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
@@ -46,6 +57,38 @@ ProcessLidar::ProcessLidar() : Node("process_lidar")
 
 ProcessLidar::~ProcessLidar()
 {
+    // --- NEW: ACCURACY METRICS ---
+    // This code runs when the node is shut down (e.g., with Ctrl+C)
+    RCLCPP_INFO(get_logger(), "--- LiDAR Perception Accuracy Report ---");
+
+    // Calculate totals
+    long total_yellow_predictions = true_positives_yellow_ + false_positives_yellow_;
+    long total_blue_predictions = true_positives_blue_ + false_positives_blue_;
+    long total_true_yellow = true_positives_yellow_ + false_positives_blue_; // Correctly Yellow + Mistakenly called Blue
+    long total_true_blue = true_positives_blue_ + false_positives_yellow_;   // Correctly Blue + Mistakenly called Yellow
+    long total_correct = true_positives_yellow_ + true_positives_blue_;
+    long total_all = total_yellow_predictions + total_blue_predictions;
+
+    // Calculate metrics, avoiding division by zero
+    double yellow_precision = (total_yellow_predictions > 0) ? (double)true_positives_yellow_ / total_yellow_predictions : 0.0;
+    double yellow_recall = (total_true_yellow > 0) ? (double)true_positives_yellow_ / total_true_yellow : 0.0;
+    double blue_precision = (total_blue_predictions > 0) ? (double)true_positives_blue_ / total_blue_predictions : 0.0;
+    double blue_recall = (total_true_blue > 0) ? (double)true_positives_blue_ / total_true_blue : 0.0;
+    double overall_accuracy = (total_all > 0) ? (double)total_correct / total_all : 0.0;
+
+    RCLCPP_INFO(get_logger(), "Overall Accuracy: %.2f%% (%ld / %ld)", overall_accuracy * 100.0, total_correct, total_all);
+    RCLCPP_INFO(get_logger(), "----------------------------------------");
+    RCLCPP_INFO(get_logger(), "Yellow Cone Metrics:");
+    RCLCPP_INFO(get_logger(), "  - Precision: %.2f%% (Correctly ID'd as Yellow / All ID'd as Yellow)", yellow_precision * 100.0);
+    RCLCPP_INFO(get_logger(), "  - Recall:    %.2f%% (Correctly ID'd as Yellow / All actual Yellow)", yellow_recall * 100.0);
+    RCLCPP_INFO(get_logger(), "  - Counts (TP/FP): %ld / %ld", true_positives_yellow_, false_positives_yellow_);
+    RCLCPP_INFO(get_logger(), "----------------------------------------");
+    RCLCPP_INFO(get_logger(), "Blue Cone Metrics:");
+    RCLCPP_INFO(get_logger(), "  - Precision: %.2f%% (Correctly ID'd as Blue / All ID'd as Blue)", blue_precision * 100.0);
+    RCLCPP_INFO(get_logger(), "  - Recall:    %.2f%% (Correctly ID'd as Blue / All actual Blue)", blue_recall * 100.0);
+    RCLCPP_INFO(get_logger(), "  - Counts (TP/FP): %ld / %ld", true_positives_blue_, false_positives_blue_);
+    RCLCPP_INFO(get_logger(), "----------------------------------------");
+
     RCLCPP_INFO(get_logger(), "LiDAR Node shutdown");
 }
 
@@ -373,9 +416,38 @@ void ProcessLidar::detectConesInClusters(const std::vector<Cluster>& clusters,
         std::vector<double> averaged_intensities = movingAverage(intensities, kernel);
 
         // Classify cone with smoothed intensities
-        colors.push_back(classifyCone(averaged_intensities, z_values) ? 
-                        dv_msgs::msg::IndexedCone::YELLOW : 
-                        dv_msgs::msg::IndexedCone::BLUE);
+        int predicted_color = classifyCone(averaged_intensities, z_values) ? 
+                              dv_msgs::msg::IndexedCone::YELLOW : 
+                              dv_msgs::msg::IndexedCone::BLUE;
+        colors.push_back(predicted_color);
+
+        // --- NEW: ACCURACY METRICS ---
+        // Calculate ground truth color based on average intensity of the original cluster
+        double total_intensity = 0.0;
+        for (const auto& point : cluster) {
+            total_intensity += point[3]; // Intensity is at index 3 of Point4D
+        }
+        double avg_intensity = cluster.empty() ? 0.0 : total_intensity / cluster.size();
+        
+        // NOTE: The threshold of 100.0 is a sensible default. Your screenshot's 1e6 is
+        // likely for a different sensor. TUNE THIS VALUE for your LiDAR.
+        GroundTruthColor true_color = (avg_intensity > 1e6) ? GroundTruthColor::BLUE : GroundTruthColor::YELLOW;
+
+        // Tally results for accuracy report
+        if (true_color == GroundTruthColor::YELLOW) {
+            if (predicted_color == dv_msgs::msg::IndexedCone::YELLOW) {
+                true_positives_yellow_++;
+            } else { // Misclassified as Blue
+                false_positives_blue_++;
+            }
+        } else { // True color is BLUE
+            if (predicted_color == dv_msgs::msg::IndexedCone::BLUE) {
+                true_positives_blue_++;
+            } else { // Misclassified as Yellow
+                false_positives_yellow_++;
+            }
+        }
+        // --- End of Tally Logic ---
     }
 }
 
@@ -503,7 +575,9 @@ std::vector<double> ProcessLidar::movingAverage(const std::vector<double> &data,
 // Publish detected cones - PRESERVING CURRENT OUTPUT FORMAT
 void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors)
 {
-    if (!detected_cones_pub_ || positions.empty()) return;
+    // This check is now redundant since the function won't be called if clusters are empty,
+    // but it's safe to keep.
+    // if (!detected_cones_pub_ || positions.empty()) return;
 
     dv_msgs::msg::IndexedTrack track_msg;
 
@@ -518,7 +592,6 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
 
         if (x < 3.35) continue; // skip this marker
         if (x > 10) continue; // Ignore very far cones
-
         
         // Convert to polar coordinates (range and angle) as in current code
         double range = sqrt(x * x + y * y);
@@ -540,7 +613,11 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
         else if (colors[i] == dv_msgs::msg::IndexedCone::BLUE) blue_count++;
 
     }
-    detected_cones_pub_->publish(track_msg);
+    // Only publish if there are cones to report
+    if (!track_msg.track.empty()) {
+        detected_cones_pub_->publish(track_msg);
+    }
+
 
     // Print counts to terminal
     RCLCPP_INFO(get_logger(), "Detected cones - Yellow: %d, Blue: %d", yellow_count, blue_count);
@@ -563,6 +640,6 @@ void ProcessLidar::lidarRawCallback2(const sensor_msgs::msg::PointCloud2::Shared
         auto points = extractPointsFromPointCloud2(msg);
         processPointCloudData(points, msg->header);
     } catch (const std::exception& e) {
-        RCLCPP_ERROR(get_logger(), "PointCloud2 processing error: %s", e.what());
+        RCLCPP_ERROR(get_logger(), "PointCloud processing error: %s", e.what());
     }
 }
