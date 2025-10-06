@@ -72,7 +72,7 @@ namespace lidar_constants {
     constexpr float Z_MIN = -0.640f;
     constexpr float Z_MAX = -0.300f;
     constexpr float BIN_WIDTH = (Z_MAX - Z_MIN) / NUM_BINS;
-    constexpr double CONFIDENCE_THRESHOLD = 0.90;
+    constexpr double CONFIDENCE_THRESHOLD = 0.99;
 }
 
 // Type aliases for better readability
@@ -90,7 +90,7 @@ class ConeClassifier {
 public:
     explicit ConeClassifier(Ort::Env& env);
     bool initialize(const std::string& model_path);
-    bool classify(const Cluster& cluster);
+    std::optional<int> classify(const Cluster& cluster);
     
 private:
     std::vector<float> extractFeatures(const Cluster& cluster) const;

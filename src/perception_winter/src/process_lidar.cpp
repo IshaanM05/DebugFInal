@@ -49,8 +49,9 @@ bool ConeClassifier::initialize(const std::string& model_path) {
     }
 }
 
-bool ConeClassifier::classify(const Cluster& cluster) {
-    if (cluster.empty()) return false;
+// Change return type to std::optional<int> to match first code
+std::optional<int> ConeClassifier::classify(const Cluster& cluster) {
+    if (cluster.empty()) return std::nullopt;
 
     auto feature_vector = extractFeatures(cluster);
 
@@ -78,14 +79,15 @@ bool ConeClassifier::classify(const Cluster& cluster) {
 
     float prediction_probability = *output_tensors[0].GetTensorMutableData<float>();
 
+    // EXACT REPLICA OF FIRST CODE:
     if (prediction_probability > confidence_threshold_) {
-        return false; // Confidently class 1 (blue)
+        return 1; // Confidently class 1 (blue)
     }
     else if (prediction_probability < (1.0 - confidence_threshold_)) {
-        return true;  // Confidently class 0 (yellow)
+        return 0; // Confidently class 0 (yellow)
     }
     else {
-        return true; // Default to yellow if uncertain
+        return std::nullopt; // Low confidence, unclassified
     }
 }
 
@@ -355,30 +357,40 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
 //                                             AccuracyMetrics& accuracy_metrics) {
 //     positions.reserve(clusters.size());
 //     colors.reserve(clusters.size());
-
+//
 //     for (const auto& cluster : clusters) {
 //         auto sorted_cluster = cluster;
 //         std::sort(sorted_cluster.begin(), sorted_cluster.end(),
 //             [](const Point4D& a, const Point4D& b) { return a[2] > b[2]; });
-
+//
 //         auto cone_pos = calculateConePosition(sorted_cluster);
+//         
+//         // Get classification with optional handling (matches first code)
+//         std::optional<int> classification = classifier.classify(cluster);
+//         
+//         // Skip low confidence clusters (std::nullopt) - same as first code
+//         if (!classification.has_value()) {
+//             continue; // Don't publish this cone
+//         }
+//
+//         // Convert to proper color codes (0=Yellow, 1=Blue)
+//         int predicted_color = (classification.value() == 1) ? 
+//                               dv_msgs::msg::IndexedCone::BLUE : 
+//                               dv_msgs::msg::IndexedCone::YELLOW;
+//         
 //         positions.push_back(cone_pos);
-
-//         int predicted_color = classifier.classify(cluster) ? 
-//                               dv_msgs::msg::IndexedCone::YELLOW : 
-//                               dv_msgs::msg::IndexedCone::BLUE;
 //         colors.push_back(predicted_color);
-
+//
 //         // Accuracy metrics calculation
 //         double total_intensity = 0.0;
 //         for (const auto& point : cluster) {
 //             total_intensity += point[3];
 //         }
 //         double avg_intensity = cluster.empty() ? 0.0 : total_intensity / cluster.size();
-        
+//         
 //         bool true_is_yellow = (avg_intensity <= 1e6); // Adjust threshold as needed for your sensor
 //         bool predicted_is_yellow = (predicted_color == dv_msgs::msg::IndexedCone::YELLOW);
-        
+//         
 //         accuracy_metrics.updateMetrics(true_is_yellow, predicted_is_yellow);
 //     }
 // }
@@ -397,14 +409,22 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
             [](const Point4D& a, const Point4D& b) { return a[2] > b[2]; });
 
         auto cone_pos = calculateConePosition(sorted_cluster);
+        
+        // Get classification with optional handling
+        std::optional<int> classification = classifier.classify(cluster);
+        
+        // Skip low confidence clusters (std::nullopt)
+        if (!classification.has_value()) {
+            continue; // Don't publish this cone
+        }
+
+        // Convert to proper color codes
+        int predicted_color = (classification.value() == 1) ? 
+                              dv_msgs::msg::IndexedCone::BLUE : 
+                              dv_msgs::msg::IndexedCone::YELLOW;
+        
         positions.push_back(cone_pos);
-
-        int predicted_color = classifier.classify(cluster) ? 
-                              dv_msgs::msg::IndexedCone::YELLOW : 
-                              dv_msgs::msg::IndexedCone::BLUE;
         colors.push_back(predicted_color);
-
-        // No accuracy metrics calculation - skip it entirely
     }
 }
 
