@@ -15,209 +15,125 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/ModelCoefficients.h>
 #include <chrono>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <filesystem>
+
+using namespace perception_winter;
 
 // --- NEW: ACCURACY METRICS ---
 // Enum to represent the calculated ground truth color
 enum class GroundTruthColor { BLUE, YELLOW };
 
-ProcessLidar::ProcessLidar() : Node("process_lidar")
-{
-    // --- NEW: ACCURACY METRICS ---
-    // Initialize all performance counters to zero
-    true_positives_yellow_ = 0;
-    false_positives_yellow_ = 0;
-    true_positives_blue_ = 0;
-    false_positives_blue_ = 0;
+// --- CONE CLASSIFIER IMPLEMENTATION ---
 
-    // Initialize reusable containers
-    // CHANGE: Commented out to prevent reuse. Fresh clouds will be created in the callback.
-    // reusable_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-    // reusable_cloud_filtered_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+ConeClassifier::ConeClassifier(Ort::Env& env) : env_(env) {}
 
-    // Subscribers
-    lidar_raw_input_sub_ = create_subscription<sensor_msgs::msg::PointCloud>(
-        LIDAR_RAW_TOPIC, 10,
-        [this](const sensor_msgs::msg::PointCloud::SharedPtr msg) {
-            lidarRawCallback(msg);
-        });
+bool ConeClassifier::initialize(const std::string& model_path) {
+    try {
+        Ort::SessionOptions session_options;
+        session_options.SetIntraOpNumThreads(1);
+        session_ = std::make_unique<Ort::Session>(env_, model_path.c_str(), session_options);
 
-    lidar_raw_input_sub2_ = create_subscription<sensor_msgs::msg::PointCloud2>(
-        LIDAR_RAW_TOPIC2, 10,
-        [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-            lidarRawCallback2(msg);
-        });
+        Ort::AllocatorWithDefaultOptions allocator;
 
-    // Publishers
-    detected_cones_pub_ = create_publisher<dv_msgs::msg::IndexedTrack>("/perception/cones", 10);
-    // filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
-    // lidar_clusters_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/clusters", 10);
+        auto input_name_ptr = session_->GetInputNameAllocated(0, allocator);
+        input_node_names_.push_back(std::string(input_name_ptr.get()));
 
-    RCLCPP_INFO(get_logger(), "Optimized LiDAR Node started");
+        auto output_name_ptr = session_->GetOutputNameAllocated(0, allocator);
+        output_node_names_.push_back(std::string(output_name_ptr.get()));
+
+        return true;
+    }
+    catch (const Ort::Exception &e) {
+        return false;
+    }
 }
 
-ProcessLidar::~ProcessLidar()
-{
-    // --- NEW: ACCURACY METRICS ---
-    // This code runs when the node is shut down (e.g., with Ctrl+C)
-    RCLCPP_INFO(get_logger(), "--- LiDAR Perception Accuracy Report ---");
+bool ConeClassifier::classify(const Cluster& cluster) {
+    if (cluster.empty()) return false;
 
-    // Calculate totals
-    long total_yellow_predictions = true_positives_yellow_ + false_positives_yellow_;
-    long total_blue_predictions = true_positives_blue_ + false_positives_blue_;
-    long total_true_yellow = true_positives_yellow_ + false_positives_blue_; // Correctly Yellow + Mistakenly called Blue
-    long total_true_blue = true_positives_blue_ + false_positives_yellow_;   // Correctly Blue + Mistakenly called Yellow
-    long total_correct = true_positives_yellow_ + true_positives_blue_;
-    long total_all = total_yellow_predictions + total_blue_predictions;
+    auto feature_vector = extractFeatures(cluster);
 
-    // Calculate metrics, avoiding division by zero
-    double yellow_precision = (total_yellow_predictions > 0) ? (double)true_positives_yellow_ / total_yellow_predictions : 0.0;
-    double yellow_recall = (total_true_yellow > 0) ? (double)true_positives_yellow_ / total_true_yellow : 0.0;
-    double blue_precision = (total_blue_predictions > 0) ? (double)true_positives_blue_ / total_blue_predictions : 0.0;
-    double blue_recall = (total_true_blue > 0) ? (double)true_positives_blue_ / total_true_blue : 0.0;
-    double overall_accuracy = (total_all > 0) ? (double)total_correct / total_all : 0.0;
+    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    std::vector<int64_t> concrete_input_shape = {1, lidar_constants::FEATURE_SIZE, 1};
+    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
+        memory_info, feature_vector.data(), feature_vector.size(),
+        concrete_input_shape.data(), concrete_input_shape.size());
 
-    RCLCPP_INFO(get_logger(), "Overall Accuracy: %.2f%% (%ld / %ld)", overall_accuracy * 100.0, total_correct, total_all);
-    RCLCPP_INFO(get_logger(), "----------------------------------------");
-    RCLCPP_INFO(get_logger(), "Yellow Cone Metrics:");
-    RCLCPP_INFO(get_logger(), "  - Precision: %.2f%% (Correctly ID'd as Yellow / All ID'd as Yellow)", yellow_precision * 100.0);
-    RCLCPP_INFO(get_logger(), "  - Recall:    %.2f%% (Correctly ID'd as Yellow / All actual Yellow)", yellow_recall * 100.0);
-    RCLCPP_INFO(get_logger(), "  - Counts (TP/FP): %ld / %ld", true_positives_yellow_, false_positives_yellow_);
-    RCLCPP_INFO(get_logger(), "----------------------------------------");
-    RCLCPP_INFO(get_logger(), "Blue Cone Metrics:");
-    RCLCPP_INFO(get_logger(), "  - Precision: %.2f%% (Correctly ID'd as Blue / All ID'd as Blue)", blue_precision * 100.0);
-    RCLCPP_INFO(get_logger(), "  - Recall:    %.2f%% (Correctly ID'd as Blue / All actual Blue)", blue_recall * 100.0);
-    RCLCPP_INFO(get_logger(), "  - Counts (TP/FP): %ld / %ld", true_positives_blue_, false_positives_blue_);
-    RCLCPP_INFO(get_logger(), "----------------------------------------");
+    std::vector<const char *> input_names_char;
+    input_names_char.reserve(input_node_names_.size());
+    for (const auto &s : input_node_names_) {
+        input_names_char.push_back(s.c_str());
+    }
 
-    RCLCPP_INFO(get_logger(), "LiDAR Node shutdown");
+    std::vector<const char *> output_names_char;
+    output_names_char.reserve(output_node_names_.size());
+    for (const auto &s : output_node_names_) {
+        output_names_char.push_back(s.c_str());
+    }
+
+    auto output_tensors = session_->Run(Ort::RunOptions{nullptr},
+                                        input_names_char.data(), &input_tensor, 1, 
+                                        output_names_char.data(), 1);
+
+    float prediction_probability = *output_tensors[0].GetTensorMutableData<float>();
+
+    if (prediction_probability > confidence_threshold_) {
+        return false; // Confidently class 1 (blue)
+    }
+    else if (prediction_probability < (1.0 - confidence_threshold_)) {
+        return true;  // Confidently class 0 (yellow)
+    }
+    else {
+        return true; // Default to yellow if uncertain
+    }
 }
 
-// PointCloud2 message processing
-std::vector<ProcessLidar::Point4D> ProcessLidar::extractPointsFromPointCloud2(
-    const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg)
-{
-    std::vector<Point4D> points;
-    points.reserve(cloud_msg->width * cloud_msg->height);
-
-    sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_msg, "x");
-    sensor_msgs::PointCloud2ConstIterator<float> iter_y(*cloud_msg, "y");
-    sensor_msgs::PointCloud2ConstIterator<float> iter_z(*cloud_msg, "z");
+std::vector<float> ConeClassifier::extractFeatures(const Cluster& cluster) const {
+    float min_intensity = std::numeric_limits<float>::max();
+    float max_intensity = std::numeric_limits<float>::lowest();
     
-    // Check for intensity field once
-    bool has_intensity = false;
-    for (const auto& field : cloud_msg->fields) {
-        if (field.name == "intensity") {
-            has_intensity = true;
-            break;
+    for (const auto& point : cluster) {
+        min_intensity = std::min(min_intensity, static_cast<float>(point[3]));
+        max_intensity = std::max(max_intensity, static_cast<float>(point[3]));
+    }
+    float intensity_range = max_intensity - min_intensity;
+
+    std::vector<float> sum_intensity(lidar_constants::NUM_BINS, 0.0f);
+    std::vector<int> point_count(lidar_constants::NUM_BINS, 0);
+    
+    for (const auto& point : cluster) {
+        float z = static_cast<float>(point[2]);
+        if (z >= lidar_constants::Z_MIN && z < lidar_constants::Z_MAX) {
+            float norm_intensity = (intensity_range > 1e-6) ? 
+                (static_cast<float>(point[3]) - min_intensity) / intensity_range : 0.0f;
+            int bin_index = static_cast<int>((z - lidar_constants::Z_MIN) / lidar_constants::BIN_WIDTH);
+            if (bin_index >= 0 && bin_index < lidar_constants::NUM_BINS) {
+                sum_intensity[bin_index] += norm_intensity;
+                point_count[bin_index]++;
+            }
         }
     }
     
-    // Initialize intensity iterator only if intensity field exists
-    std::optional<sensor_msgs::PointCloud2ConstIterator<float>> iter_intensity_opt;
-    if (has_intensity) {
-        iter_intensity_opt.emplace(*cloud_msg, "intensity");
+    std::vector<float> feature_vector(lidar_constants::FEATURE_SIZE);
+    for (int i = 0; i < lidar_constants::NUM_BINS; ++i) {
+        feature_vector[i] = static_cast<float>(point_count[i]);
+        feature_vector[i + lidar_constants::NUM_BINS] = (point_count[i] > 0) ? 
+            sum_intensity[i] / point_count[i] : 0.0f;
     }
 
-    // Single pass extraction
-    for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
-        double intensity = 0.0;
-        if (has_intensity && iter_intensity_opt.has_value()) {
-            intensity = *(*iter_intensity_opt);
-            ++(*iter_intensity_opt);
-        }
-        points.push_back({*iter_x, *iter_y, *iter_z, intensity});
-    }
-
-    return points;
+    return feature_vector;
 }
 
-// PointCloud message processing
-std::vector<ProcessLidar::Point4D> ProcessLidar::extractPointsFromPointCloud(
-    const sensor_msgs::msg::PointCloud::SharedPtr cloud_msg)
-{
-    std::vector<Point4D> points;
-    points.reserve(cloud_msg->points.size());
+// --- POINT CLOUD PROCESSOR IMPLEMENTATION ---
 
-    bool has_intensity = !cloud_msg->channels.empty() && 
-                        cloud_msg->channels[0].values.size() == cloud_msg->points.size();
-
-    // Single pass extraction with bounds checking
-    for (size_t i = 0; i < cloud_msg->points.size(); ++i) {
-        const auto& pt = cloud_msg->points[i];
-        points.push_back({pt.x, pt.y, pt.z, has_intensity ? cloud_msg->channels[0].values[i] : 0.0});
-    }
-
-    return points;
-}
-
-// Main processing pipeline
-void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std_msgs::msg::Header& header)
-{
-    (void)header; // Mark as unused to suppress warning
-    
-    if (points.empty()) return;
-
-    // --- CHANGE HERE ---
-    // Create fresh, local point clouds for this specific scan to avoid stale metadata issues.
-    auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-    auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-
-    auto pipeline_start = std::chrono::steady_clock::now();
-    
-    // Stage 1: Filtering
-    // reusable_cloud_->clear(); // No longer needed
-    if (!filterCarBodyAndROI(points, cloud)) { // Use local 'cloud'
-        RCLCPP_DEBUG(get_logger(), "No points after car body and ROI filtering");
-        return;
-    }
-
-    // Stage 2: Ground removal
-    // reusable_cloud_filtered_->clear(); // No longer needed
-    if (!removeGroundPlane(cloud, cloud_filtered)) { // Use local 'cloud' and 'cloud_filtered'
-        RCLCPP_DEBUG(get_logger(), "No points after ground removal");
-        return;
-    }
-
-    // Publish filtered points for visualization
-    // publishFilteredPoints(cloud_filtered);
-
-    // Stage 3: Clustering
-    auto clusters = clusterPoints(cloud_filtered); // Use local 'cloud_filtered'
-    if (clusters.empty()) {
-        RCLCPP_DEBUG(get_logger(), "No clusters found");
-        return;
-    }
-
-    // Stage 4: Cluster filtering
-    auto filtered_clusters = filterClustersBySize(clusters);
-    if (filtered_clusters.empty()) {
-        RCLCPP_DEBUG(get_logger(), "No valid clusters after size filtering");
-        return;
-    }
-
-    // Stage 5: Cone detection
-    std::vector<Point3D> cone_positions;
-    std::vector<int> cone_colors;
-    detectConesInClusters(filtered_clusters, cone_positions, cone_colors);
-
-    // Publish results
-    // publishLidarClusters(cone_positions);
-    publishDetectedCones(cone_positions, cone_colors);
-
-    auto pipeline_end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(pipeline_end - pipeline_start);
-    RCLCPP_DEBUG(get_logger(), "Processing completed in %ld ms", duration.count());
-}
-
-// Optimized filtering stage - MATCHING WORKING CODE EXACTLY
-bool ProcessLidar::filterCarBodyAndROI(const std::vector<Point4D>& input_points, 
-                                      pcl::PointCloud<pcl::PointXYZI>::Ptr output_cloud)
-{
+bool PointCloudProcessor::filterCarBodyAndROI(const std::vector<Point4D>& input_points, 
+                                              PointCloudPtr output_cloud) {
     output_cloud->reserve(input_points.size());
     
-    // First pass: Car body filtering
     for (const auto& point : input_points) {
-        bool is_valid_point = (point[0] > CAR_FRONT_X) || (std::abs(point[1]) > CAR_SIDE_Y);
+        bool is_valid_point = (point[0] > lidar_constants::CAR_FRONT_X) || 
+                             (std::abs(point[1]) > lidar_constants::CAR_SIDE_Y);
 
         if (point[0] > 0 && is_valid_point) {
             pcl::PointXYZI pcl_point;
@@ -229,27 +145,23 @@ bool ProcessLidar::filterCarBodyAndROI(const std::vector<Point4D>& input_points,
         }
     }
 
-    // Second pass: ROI filtering using PassThrough (matching working code)
     auto cloud_filtered_pass = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
     pcl::PassThrough<pcl::PointXYZI> pass;
 
     pass.setInputCloud(output_cloud);
     pass.setFilterFieldName("y");
-    pass.setFilterLimits(ROI_Y_MIN, ROI_Y_MAX);
+    pass.setFilterLimits(lidar_constants::ROI_Y_MIN, lidar_constants::ROI_Y_MAX);
     pass.filter(*cloud_filtered_pass);
 
     pass.setInputCloud(cloud_filtered_pass);
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(ROI_Z_MIN, ROI_Z_MAX);
+    pass.setFilterLimits(lidar_constants::ROI_Z_MIN, lidar_constants::ROI_Z_MAX);
     pass.filter(*output_cloud);
     
     return !output_cloud->empty();
 }
 
-// Optimized ground removal - MATCHING WORKING CODE EXACTLY
-bool ProcessLidar::removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
-                                    pcl::PointCloud<pcl::PointXYZI>::Ptr non_ground_cloud)
-{
+bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud, PointCloudPtr non_ground_cloud) {
     if (cloud->empty()) return false;
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -257,11 +169,10 @@ bool ProcessLidar::removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
     pcl::SACSegmentation<pcl::PointXYZI> seg;
     pcl::ExtractIndices<pcl::PointXYZI> extract;
 
-    // Configure segmentation
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setDistanceThreshold(RANSAC_THRESHOLD);
+    seg.setDistanceThreshold(lidar_constants::RANSAC_THRESHOLD);
 
     auto remaining_cloud = cloud;
     auto ground_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
@@ -269,9 +180,10 @@ bool ProcessLidar::removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
     std::optional<Eigen::Vector3f> reference_normal;
     int iterations = 0;
 
-    while (remaining_cloud->size() > MIN_POINTS_FOR_PLANE && iterations < MAX_GROUND_ITERATIONS) {
-        // Dynamic max iterations like working code
-        int dynamic_max_iter = std::min(static_cast<int>(remaining_cloud->size() / 200), MAX_GROUND_ITERATIONS);
+    while (remaining_cloud->size() > lidar_constants::MIN_POINTS_FOR_PLANE && 
+           iterations < lidar_constants::MAX_GROUND_ITERATIONS) {
+        int dynamic_max_iter = std::min(static_cast<int>(remaining_cloud->size() / 200), 
+                                       lidar_constants::MAX_GROUND_ITERATIONS);
         if (iterations >= dynamic_max_iter) break;
 
         seg.setInputCloud(remaining_cloud);
@@ -282,18 +194,12 @@ bool ProcessLidar::removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
         Eigen::Vector3f current_normal(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
         if (current_normal.z() < 0) current_normal = -current_normal;
 
-        if (current_normal.z() < MIN_Z_NORMAL_COMPONENT) break;
+        if (!isValidGroundPlane(current_normal, reference_normal)) break;
 
-        if (reference_normal.has_value()) {
-            double dot_product = current_normal.dot(reference_normal.value());
-            double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
-            double angle_deg = angle_rad * (180.0 / M_PI);
-            if (angle_deg > MAX_SLOPE_DEVIATION_DEG) break;
-        } else {
+        if (!reference_normal.has_value()) {
             reference_normal = current_normal;
         }
 
-        // Extract ground plane
         auto current_ground_plane = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         extract.setInputCloud(remaining_cloud);
         extract.setIndices(inliers);
@@ -301,7 +207,6 @@ bool ProcessLidar::removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
         extract.filter(*current_ground_plane);
         *ground_cloud += *current_ground_plane;
 
-        // Extract remaining points
         auto next_remaining = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         extract.setNegative(true);
         extract.filter(*next_remaining);
@@ -313,12 +218,77 @@ bool ProcessLidar::removeGroundPlane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
     return !non_ground_cloud->empty();
 }
 
-// Optimized clustering
-std::vector<ProcessLidar::Cluster> ProcessLidar::clusterPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
-{
+bool PointCloudProcessor::isValidGroundPlane(const Eigen::Vector3f& normal, 
+                                            const std::optional<Eigen::Vector3f>& reference_normal) const {
+    if (normal.z() < lidar_constants::MIN_Z_NORMAL_COMPONENT) return false;
+
+    if (reference_normal.has_value()) {
+        double dot_product = normal.dot(reference_normal.value());
+        double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
+        double angle_deg = angle_rad * (180.0 / M_PI);
+        if (angle_deg > lidar_constants::MAX_SLOPE_DEVIATION_DEG) return false;
+    }
+
+    return true;
+}
+
+// --- ACCURACY METRICS IMPLEMENTATION ---
+
+void AccuracyMetrics::updateMetrics(bool true_is_yellow, bool predicted_is_yellow) {
+    if (true_is_yellow) {
+        if (predicted_is_yellow) {
+            metrics_.true_positives_yellow++;
+        } else {
+            metrics_.false_positives_blue++;
+        }
+    } else {
+        if (predicted_is_yellow) {
+            metrics_.false_positives_yellow++;
+        } else {
+            metrics_.true_positives_blue++;
+        }
+    }
+}
+
+void AccuracyMetrics::printReport(rclcpp::Logger logger) const {
+    long total_yellow_predictions = metrics_.true_positives_yellow + metrics_.false_positives_yellow;
+    long total_blue_predictions = metrics_.true_positives_blue + metrics_.false_positives_blue;
+    long total_true_yellow = metrics_.true_positives_yellow + metrics_.false_positives_blue;
+    long total_true_blue = metrics_.true_positives_blue + metrics_.false_positives_yellow;
+    long total_correct = metrics_.true_positives_yellow + metrics_.true_positives_blue;
+    long total_all = total_yellow_predictions + total_blue_predictions;
+
+    double yellow_precision = (total_yellow_predictions > 0) ? 
+        (double)metrics_.true_positives_yellow / total_yellow_predictions : 0.0;
+    double yellow_recall = (total_true_yellow > 0) ? 
+        (double)metrics_.true_positives_yellow / total_true_yellow : 0.0;
+    double blue_precision = (total_blue_predictions > 0) ? 
+        (double)metrics_.true_positives_blue / total_blue_predictions : 0.0;
+    double blue_recall = (total_true_blue > 0) ? 
+        (double)metrics_.true_positives_blue / total_true_blue : 0.0;
+    double overall_accuracy = (total_all > 0) ? 
+        (double)total_correct / total_all : 0.0;
+
+    RCLCPP_INFO(logger, "--- LiDAR Perception Accuracy Report ---");
+    RCLCPP_INFO(logger, "Overall Accuracy: %.2f%% (%ld / %ld)", overall_accuracy * 100.0, total_correct, total_all);
+    RCLCPP_INFO(logger, "----------------------------------------");
+    RCLCPP_INFO(logger, "Yellow Cone Metrics:");
+    RCLCPP_INFO(logger, "  - Precision: %.2f%%", yellow_precision * 100.0);
+    RCLCPP_INFO(logger, "  - Recall:    %.2f%%", yellow_recall * 100.0);
+    RCLCPP_INFO(logger, "  - Counts (TP/FP): %ld / %ld", metrics_.true_positives_yellow, metrics_.false_positives_yellow);
+    RCLCPP_INFO(logger, "----------------------------------------");
+    RCLCPP_INFO(logger, "Blue Cone Metrics:");
+    RCLCPP_INFO(logger, "  - Precision: %.2f%%", blue_precision * 100.0);
+    RCLCPP_INFO(logger, "  - Recall:    %.2f%%", blue_recall * 100.0);
+    RCLCPP_INFO(logger, "  - Counts (TP/FP): %ld / %ld", metrics_.true_positives_blue, metrics_.false_positives_blue);
+    RCLCPP_INFO(logger, "----------------------------------------");
+}
+
+// --- CLUSTER PROCESSOR IMPLEMENTATION ---
+
+std::vector<Cluster> ClusterProcessor::clusterPoints(const PointCloudPtr cloud) {
     if (cloud->empty()) return {};
 
-    // Convert to Open3D format efficiently
     auto o3d_pcd = std::make_shared<open3d::geometry::PointCloud>();
     o3d_pcd->points_.reserve(cloud->size());
     
@@ -326,9 +296,9 @@ std::vector<ProcessLidar::Cluster> ProcessLidar::clusterPoints(const pcl::PointC
         o3d_pcd->points_.emplace_back(point.x, point.y, point.z);
     }
 
-    auto labels = o3d_pcd->ClusterDBSCAN(DBSCAN_EPSILON, DBSCAN_MINPOINTS, false);
+    auto labels = o3d_pcd->ClusterDBSCAN(lidar_constants::DBSCAN_EPSILON, 
+                                        lidar_constants::DBSCAN_MINPOINTS, false);
     
-    // Group points by cluster efficiently
     int max_label = 0;
     if (!labels.empty()) {
         max_label = *std::max_element(labels.begin(), labels.end());
@@ -343,23 +313,19 @@ std::vector<ProcessLidar::Cluster> ProcessLidar::clusterPoints(const pcl::PointC
         }
     }
 
-    // Remove empty clusters
     clusters.erase(std::remove_if(clusters.begin(), clusters.end(),
         [](const Cluster& c) { return c.empty(); }), clusters.end());
 
     return clusters;
 }
 
-// Optimized cluster filtering - MATCHING WORKING CODE EXACTLY
-std::vector<ProcessLidar::Cluster> ProcessLidar::filterClustersBySize(const std::vector<Cluster>& clusters)
-{
+std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cluster>& clusters) {
     std::vector<Cluster> valid_clusters;
     valid_clusters.reserve(clusters.size());
 
     for (const auto& cluster : clusters) {
-        if (cluster.size() < 4) continue; // Using 4 to match stable code logic
+        if (cluster.size() < 4) continue;
 
-        // Compute bounding box exactly like working code
         double min_x = cluster[0][0], max_x = cluster[0][0];
         double min_y = cluster[0][1], max_y = cluster[0][1];
         double min_z = cluster[0][2], max_z = cluster[0][2];
@@ -373,7 +339,6 @@ std::vector<ProcessLidar::Cluster> ProcessLidar::filterClustersBySize(const std:
         double height = max_z - min_z;
         double width = std::max(max_x - min_x, max_y - min_y);
 
-        // Use the EXACT same pruning criteria as working code
         if (height >= 0.15 && height <= 0.4 && width <= 0.45) {
             valid_clusters.push_back(cluster);
         }
@@ -382,79 +347,68 @@ std::vector<ProcessLidar::Cluster> ProcessLidar::filterClustersBySize(const std:
     return valid_clusters;
 }
 
-// Optimized cone detection - MATCHING WORKING CODE EXACTLY
-void ProcessLidar::detectConesInClusters(const std::vector<Cluster>& clusters,
-                                        std::vector<Point3D>& positions,
-                                        std::vector<int>& colors)
-{
+// Original method with accuracy metrics
+// void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& clusters,
+//                                             std::vector<Point3D>& positions,
+//                                             std::vector<int>& colors,
+//                                             ConeClassifier& classifier,
+//                                             AccuracyMetrics& accuracy_metrics) {
+//     positions.reserve(clusters.size());
+//     colors.reserve(clusters.size());
+
+//     for (const auto& cluster : clusters) {
+//         auto sorted_cluster = cluster;
+//         std::sort(sorted_cluster.begin(), sorted_cluster.end(),
+//             [](const Point4D& a, const Point4D& b) { return a[2] > b[2]; });
+
+//         auto cone_pos = calculateConePosition(sorted_cluster);
+//         positions.push_back(cone_pos);
+
+//         int predicted_color = classifier.classify(cluster) ? 
+//                               dv_msgs::msg::IndexedCone::YELLOW : 
+//                               dv_msgs::msg::IndexedCone::BLUE;
+//         colors.push_back(predicted_color);
+
+//         // Accuracy metrics calculation
+//         double total_intensity = 0.0;
+//         for (const auto& point : cluster) {
+//             total_intensity += point[3];
+//         }
+//         double avg_intensity = cluster.empty() ? 0.0 : total_intensity / cluster.size();
+        
+//         bool true_is_yellow = (avg_intensity <= 1e6); // Adjust threshold as needed for your sensor
+//         bool predicted_is_yellow = (predicted_color == dv_msgs::msg::IndexedCone::YELLOW);
+        
+//         accuracy_metrics.updateMetrics(true_is_yellow, predicted_is_yellow);
+//     }
+// }
+
+// Without accuracy metrics
+void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& clusters,
+                                            std::vector<Point3D>& positions,
+                                            std::vector<int>& colors,
+                                            ConeClassifier& classifier) {
     positions.reserve(clusters.size());
     colors.reserve(clusters.size());
 
     for (const auto& cluster : clusters) {
-        // Sort by Z for intensity analysis (like working code)
         auto sorted_cluster = cluster;
         std::sort(sorted_cluster.begin(), sorted_cluster.end(),
             [](const Point4D& a, const Point4D& b) { return a[2] > b[2]; });
 
-        // Calculate cone position using working code's method
         auto cone_pos = calculateConePosition(sorted_cluster);
         positions.push_back(cone_pos);
 
-        // Extract intensities and z-values
-        std::vector<double> intensities, z_values;
-        intensities.reserve(sorted_cluster.size());
-        z_values.reserve(sorted_cluster.size());
-        
-        for (const auto& point : sorted_cluster) {
-            intensities.push_back(point[3]);
-            z_values.push_back(point[2]);
-        }
-
-        // Apply moving average like working code
-        int kernel = std::max(3, static_cast<int>(0.1 * intensities.size()));
-        if (kernel % 2 == 0) kernel += 1;
-        std::vector<double> averaged_intensities = movingAverage(intensities, kernel);
-
-        // Classify cone with smoothed intensities
-        int predicted_color = classifyCone(averaged_intensities, z_values) ? 
+        int predicted_color = classifier.classify(cluster) ? 
                               dv_msgs::msg::IndexedCone::YELLOW : 
                               dv_msgs::msg::IndexedCone::BLUE;
         colors.push_back(predicted_color);
 
-        // --- NEW: ACCURACY METRICS ---
-        // Calculate ground truth color based on average intensity of the original cluster
-        double total_intensity = 0.0;
-        for (const auto& point : cluster) {
-            total_intensity += point[3]; // Intensity is at index 3 of Point4D
-        }
-        double avg_intensity = cluster.empty() ? 0.0 : total_intensity / cluster.size();
-        
-        // NOTE: The threshold of 100.0 is a sensible default. Your screenshot's 1e6 is
-        // likely for a different sensor. TUNE THIS VALUE for your LiDAR.
-        GroundTruthColor true_color = (avg_intensity > 1e6) ? GroundTruthColor::BLUE : GroundTruthColor::YELLOW;
-
-        // Tally results for accuracy report
-        if (true_color == GroundTruthColor::YELLOW) {
-            if (predicted_color == dv_msgs::msg::IndexedCone::YELLOW) {
-                true_positives_yellow_++;
-            } else { // Misclassified as Blue
-                false_positives_blue_++;
-            }
-        } else { // True color is BLUE
-            if (predicted_color == dv_msgs::msg::IndexedCone::BLUE) {
-                true_positives_blue_++;
-            } else { // Misclassified as Yellow
-                false_positives_yellow_++;
-            }
-        }
-        // --- End of Tally Logic ---
+        // No accuracy metrics calculation - skip it entirely
     }
 }
 
-// Optimized cone position calculation - MATCHING WORKING CODE EXACTLY
-ProcessLidar::Point3D ProcessLidar::calculateConePosition(const Cluster& cluster)
-{
-    // Compute min/max like working code
+Point3D ClusterProcessor::calculateConePosition(const Cluster& cluster) {
     double min_x = cluster[0][0], max_x = cluster[0][0];
     double min_y = cluster[0][1], max_y = cluster[0][1];
     for (const auto& point : cluster) {
@@ -464,27 +418,22 @@ ProcessLidar::Point3D ProcessLidar::calculateConePosition(const Cluster& cluster
         max_y = std::max(max_y, point[1]);
     }
 
-    // Compute median using working code's method
     double median_x = getMedian(cluster, 0);
     double median_y = getMedian(cluster, 1);
 
-    // Use EXACT same weighting as working code
     constexpr double w_median = 0.7;
     constexpr double w_min_x = 0.3;
     constexpr double w_min_y = 0.3;
 
-    double cone_x = w_median * median_x + w_min_x * (min_x + CONE_BASE_RADIUS);
-    double cone_y = w_median * median_y + w_min_y * (min_y + CONE_BASE_RADIUS);
+    double cone_x = w_median * median_x + w_min_x * (min_x + lidar_constants::CONE_BASE_RADIUS);
+    double cone_y = w_median * median_y + w_min_y * (min_y + lidar_constants::CONE_BASE_RADIUS);
 
-    return {cone_x, cone_y, CONE_HEIGHT};
+    return {cone_x, cone_y, lidar_constants::CONE_HEIGHT};
 }
 
-// Optimized median calculation - MATCHING WORKING CODE EXACTLY
-double ProcessLidar::getMedian(const Cluster& points, size_t idx) const
-{
+double ClusterProcessor::getMedian(const Cluster& points, size_t idx) const {
     if (points.empty()) return 0.0;
 
-    // Create indices and use nth_element like working code
     std::vector<size_t> indices(points.size());
     std::iota(indices.begin(), indices.end(), 0);
 
@@ -494,7 +443,6 @@ double ProcessLidar::getMedian(const Cluster& points, size_t idx) const
 
     double median = points[indices[mid]][idx];
 
-    // For even-sized clusters, average middle two (like working code)
     if (indices.size() % 2 == 0 && mid > 0) {
         auto max_it = std::max_element(indices.begin(), indices.begin() + mid,
             [&points, idx](size_t a, size_t b) { return points[a][idx] < points[b][idx]; });
@@ -504,81 +452,183 @@ double ProcessLidar::getMedian(const Cluster& points, size_t idx) const
     return median;
 }
 
-// Cone classification using quadratic fitting - MATCHING WORKING CODE EXACTLY
-bool ProcessLidar::classifyCone(const std::vector<double> &y_vals, const std::vector<double> &x_vals)
-{
-    if (y_vals.size() < 3) return false;
+// --- POINT CLOUD EXTRACTOR IMPLEMENTATION ---
 
-    int n = y_vals.size();
-    Eigen::MatrixXd A(n, 3);
-    Eigen::VectorXd y(n);
+std::vector<Point4D> PointCloudExtractor::fromPointCloud(const sensor_msgs::msg::PointCloud::SharedPtr cloud_msg) {
+    std::vector<Point4D> points;
+    points.reserve(cloud_msg->points.size());
 
-    for (int i = 0; i < n; ++i) {
-        double x = x_vals.at(i);
-        A(i, 0) = x * x;
-        A(i, 1) = x;
-        A(i, 2) = 1.0;
-        y(i) = y_vals.at(i);
+    bool has_intensity = !cloud_msg->channels.empty() && 
+                        cloud_msg->channels[0].values.size() == cloud_msg->points.size();
+
+    for (size_t i = 0; i < cloud_msg->points.size(); ++i) {
+        const auto& pt = cloud_msg->points[i];
+        points.push_back({pt.x, pt.y, pt.z, has_intensity ? cloud_msg->channels[0].values[i] : 0.0});
     }
 
-    Eigen::Vector3d coeffs = A.colPivHouseholderQr().solve(y);
-    return coeffs(0) > 0;
+    return points;
 }
 
-// Moving average filter - MATCHING WORKING CODE EXACTLY
-std::vector<double> ProcessLidar::movingAverage(const std::vector<double> &data, int kernel)
-{
-    int n = data.size();
-    std::vector<double> result(n, 0.0);
-    if (kernel < 1) return data;
+std::vector<Point4D> PointCloudExtractor::fromPointCloud2(const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg) {
+    std::vector<Point4D> points;
+    points.reserve(cloud_msg->width * cloud_msg->height);
 
-    int half = kernel / 2;
-    for (int i = 0; i < n; ++i) {
-        int start = std::max(0, i - half);
-        int end = std::min(n - 1, i + half);
-        double sum = 0.0;
-        for (int j = start; j <= end; ++j) {
-            sum += data[j];
+    sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_msg, "x");
+    sensor_msgs::PointCloud2ConstIterator<float> iter_y(*cloud_msg, "y");
+    sensor_msgs::PointCloud2ConstIterator<float> iter_z(*cloud_msg, "z");
+    
+    bool has_intensity = false;
+    for (const auto& field : cloud_msg->fields) {
+        if (field.name == "intensity") {
+            has_intensity = true;
+            break;
         }
-        result[i] = sum / (end - start + 1);
     }
-    return result;
+    
+    std::optional<sensor_msgs::PointCloud2ConstIterator<float>> iter_intensity_opt;
+    if (has_intensity) {
+        iter_intensity_opt.emplace(*cloud_msg, "intensity");
+    }
+
+    for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
+        double intensity = 0.0;
+        if (has_intensity && iter_intensity_opt.has_value()) {
+            intensity = *(*iter_intensity_opt);
+            ++(*iter_intensity_opt);
+        }
+        points.push_back({*iter_x, *iter_y, *iter_z, intensity});
+    }
+
+    return points;
 }
 
-// Publish filtered points for visualization
-// void ProcessLidar::publishFilteredPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
-// {
-//     if (!filtered_points_pub_ || cloud->points.empty()) return;
+// --- MAIN PROCESS LIDAR IMPLEMENTATION ---
 
-//     auto message = std_msgs::msg::Float32MultiArray();
-//     for (const auto& point : cloud->points) {
-//         message.data.push_back(static_cast<float>(point.x));
-//         message.data.push_back(static_cast<float>(point.y));
-//         message.data.push_back(static_cast<float>(point.z));
-//     }
-//     filtered_points_pub_->publish(message);
-// }
+ProcessLidar::ProcessLidar() : 
+    Node("process_lidar"), 
+    env_(ORT_LOGGING_LEVEL_WARNING, "ONNX_INFERENCE") {
+    
+    initializeComponents();
+    
+    // Subscribers
+    lidar_raw_input_sub_ = create_subscription<sensor_msgs::msg::PointCloud>(
+        lidar_constants::LIDAR_RAW_TOPIC, 10,
+        [this](const sensor_msgs::msg::PointCloud::SharedPtr msg) {
+            lidarRawCallback(msg);
+        });
 
-// // Publish cluster centers
-// void ProcessLidar::publishLidarClusters(const std::vector<Point3D>& cluster_centers)
-// {
-//     if (!lidar_clusters_pub_ || cluster_centers.empty()) return;
+    lidar_raw_input_sub2_ = create_subscription<sensor_msgs::msg::PointCloud2>(
+        lidar_constants::LIDAR_RAW_TOPIC2, 10,
+        [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+            lidarRawCallback2(msg);
+        });
 
-//     auto message = std_msgs::msg::Float32MultiArray();
-//     for (const auto& center : cluster_centers) {
-//         message.data.push_back(static_cast<float>(center[0]));
-//         message.data.push_back(static_cast<float>(center[1]));
-//     }
-//     lidar_clusters_pub_->publish(message);
-// }
+    // Publishers
+    detected_cones_pub_ = create_publisher<dv_msgs::msg::IndexedTrack>("/perception/cones", 10);
+    filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
+    lidar_clusters_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/clusters", 10);
 
-// Publish detected cones - PRESERVING CURRENT OUTPUT FORMAT
-void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors)
-{
-    // This check is now redundant since the function won't be called if clusters are empty,
-    // but it's safe to keep.
-    // if (!detected_cones_pub_ || positions.empty()) return;
+    RCLCPP_INFO(get_logger(), "Optimized LiDAR Node started");
+}
 
+ProcessLidar::~ProcessLidar() {
+    // Commented to remove accuracy metrics printing on shutdown
+    // if (accuracy_metrics_) {
+    //     accuracy_metrics_->printReport(get_logger());
+    // }
+    RCLCPP_INFO(get_logger(), "LiDAR Node shutdown");
+}
+
+void ProcessLidar::initializeComponents() {
+    cone_classifier_ = std::make_unique<ConeClassifier>(env_);
+    point_cloud_processor_ = std::make_unique<PointCloudProcessor>();
+    cluster_processor_ = std::make_unique<ClusterProcessor>();
+    //accuracy_metrics_ = std::make_unique<AccuracyMetrics>();
+    
+    loadONNXModel();
+}
+
+void ProcessLidar::loadONNXModel() {
+    std::string package_share_directory;
+    try {
+        package_share_directory = ament_index_cpp::get_package_share_directory("perception_winter");
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(get_logger(), "Failed to get package share directory: %s", e.what());
+        package_share_directory = ".";
+    }
+    
+    std::string model_path = package_share_directory + "/cone_model.onnx";
+    
+    if (cone_classifier_->initialize(model_path)) {
+        RCLCPP_INFO(get_logger(), "Successfully loaded ONNX model from: %s", model_path.c_str());
+    } else {
+        RCLCPP_FATAL(get_logger(), "Failed to load ONNX model: %s", model_path.c_str());
+        rclcpp::shutdown();
+    }
+}
+
+void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std_msgs::msg::Header& header) {
+    (void)header;
+    
+    if (points.empty()) return;
+
+    auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+
+    auto pipeline_start = std::chrono::steady_clock::now();
+    
+    // Stage 1: Filtering
+    if (!point_cloud_processor_->filterCarBodyAndROI(points, cloud)) {
+        RCLCPP_DEBUG(get_logger(), "No points after car body and ROI filtering");
+        return;
+    }
+
+    // Stage 2: Ground removal
+    if (!point_cloud_processor_->removeGroundPlane(cloud, cloud_filtered)) {
+        RCLCPP_DEBUG(get_logger(), "No points after ground removal");
+        return;
+    }
+    //  Optional: Publish filtered points for debugging
+    publishFilteredPoints(cloud_filtered);
+
+    // Stage 3: Clustering
+    auto clusters = cluster_processor_->clusterPoints(cloud_filtered);
+    if (clusters.empty()) {
+        RCLCPP_DEBUG(get_logger(), "No clusters found");
+        return;
+    }
+
+    // Stage 4: Cluster filtering
+    auto filtered_clusters = cluster_processor_->filterClustersBySize(clusters);
+    if (filtered_clusters.empty()) {
+        RCLCPP_DEBUG(get_logger(), "No valid clusters after size filtering");
+        return;
+    }
+
+    // Stage 5: Cone detection
+    std::vector<Point3D> cone_positions;
+    std::vector<int> cone_colors;
+    
+    //With accuracy metrics
+    // cluster_processor_->detectConesInClusters(filtered_clusters, cone_positions, cone_colors,
+    //                                          *cone_classifier_, *accuracy_metrics_);
+
+    //Without accuracy metrics
+    cluster_processor_->detectConesInClusters(filtered_clusters, cone_positions, cone_colors,
+                                         *cone_classifier_);
+
+    // PUBLISH LIDAR CLUSTERS FOR DEBUGGING
+    // publishLidarClusters(cone_positions);
+
+    // Publish results
+    publishDetectedCones(cone_positions, cone_colors);
+
+    auto pipeline_end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(pipeline_end - pipeline_start);
+    RCLCPP_DEBUG(get_logger(), "Processing completed in %ld ms", duration.count());
+}
+
+void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors) {
     dv_msgs::msg::IndexedTrack track_msg;
 
     int yellow_count = 0;
@@ -590,56 +640,70 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
         double y = positions[i][1];
         double z = positions[i][2];
 
-        if (x < 3.35) continue; // skip this marker
-        if (x > 10) continue; // Ignore very far cones
+        if (x < 3.35) continue;
+        if (x > 12) continue;
         
-        // Convert to polar coordinates (range and angle) as in current code
         double range = sqrt(x * x + y * y);
         double angle = atan2(y, x);
         
         cone_msg.location.x = range;
         cone_msg.location.y = angle;
-        // --- CHANGE HERE ---
-        // Publish the final Cartesian coordinates directly, just like the stable code.
-        // cone_msg.location.x = x;
-        // cone_msg.location.y = y;
         cone_msg.location.z = z;
         cone_msg.color = colors[i];
         cone_msg.index = i;
         track_msg.track.push_back(cone_msg);
 
-        // Count colors
         if (colors[i] == dv_msgs::msg::IndexedCone::YELLOW) yellow_count++;
         else if (colors[i] == dv_msgs::msg::IndexedCone::BLUE) blue_count++;
-
     }
-    // Only publish if there are cones to report
+    
     if (!track_msg.track.empty()) {
         detected_cones_pub_->publish(track_msg);
     }
 
-
-    // Print counts to terminal
     RCLCPP_INFO(get_logger(), "Detected cones - Yellow: %d, Blue: %d", yellow_count, blue_count);
 }
 
-// Callbacks
-void ProcessLidar::lidarRawCallback(const sensor_msgs::msg::PointCloud::SharedPtr msg)
-{
+void ProcessLidar::lidarRawCallback(const sensor_msgs::msg::PointCloud::SharedPtr msg) {
     try {
-        auto points = extractPointsFromPointCloud(msg);
+        auto points = PointCloudExtractor::fromPointCloud(msg);
         processPointCloudData(points, msg->header);
     } catch (const std::exception& e) {
         RCLCPP_ERROR(get_logger(), "PointCloud processing error: %s", e.what());
     }
 }
 
-void ProcessLidar::lidarRawCallback2(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
-{
+void ProcessLidar::lidarRawCallback2(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     try {
-        auto points = extractPointsFromPointCloud2(msg);
+        auto points = PointCloudExtractor::fromPointCloud2(msg);
         processPointCloudData(points, msg->header);
     } catch (const std::exception& e) {
         RCLCPP_ERROR(get_logger(), "PointCloud processing error: %s", e.what());
     }
 }
+
+// Publishers (commented out - kept for reference)
+void ProcessLidar::publishFilteredPoints(const PointCloudPtr cloud)
+{
+    if (!filtered_points_pub_ || cloud->points.empty()) return;
+
+    auto message = std_msgs::msg::Float32MultiArray();
+    for (const auto& point : cloud->points) {
+        message.data.push_back(static_cast<float>(point.x));
+        message.data.push_back(static_cast<float>(point.y));
+        message.data.push_back(static_cast<float>(point.z));
+    }
+    filtered_points_pub_->publish(message);
+}
+//
+// void ProcessLidar::publishLidarClusters(const std::vector<Point3D>& cluster_centers)
+// {
+//     if (!lidar_clusters_pub_ || cluster_centers.empty()) return;
+//
+//     auto message = std_msgs::msg::Float32MultiArray();
+//     for (const auto& center : cluster_centers) {
+//         message.data.push_back(static_cast<float>(center[0]));
+//         message.data.push_back(static_cast<float>(center[1]));
+//     }
+//     lidar_clusters_pub_->publish(message);
+// }
