@@ -16,6 +16,7 @@
   <depend>std_msgs</depend>
   <depend>dv_msgs</depend>
   <depend>pcl_conversions</depend>
+  <depend>onnxruntime</depend>
 
   <!-- System dependencies -->
   <depend>libopen3d-dev</depend>

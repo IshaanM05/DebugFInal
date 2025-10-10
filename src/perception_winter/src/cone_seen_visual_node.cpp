@@ -1,5 +1,3 @@
-// src/cone_seen_visual_node.cpp
-
 #include "perception_winter/cone_seen_visual_node.hpp" // Adjust path as needed
 
 using std::placeholders::_1;
@@ -36,51 +34,6 @@ double ConeSeenVisualNode::quaternion_to_yaw(const geometry_msgs::msg::Quaternio
     double cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
     return std::atan2(siny_cosp, cosy_cosp);
 }
-
-// void ConeSeenVisualNode::check_for_slam_topic()
-// {
-//     if (!using_ground_truth_) {
-//         // Already switched, destroy the timer to save resources
-//         slam_check_timer_->cancel();
-//         return;
-//     }
-
-//     auto topics = this->get_topic_names_and_types();
-//     for (const auto& topic_pair : topics) {
-//         if (topic_pair.first == "/slam_data") {
-//             RCLCPP_INFO(this->get_logger(), "SLAM data detected. Switching subscriber...");
-
-//             // Destroy the old ground truth subscriber by resetting the smart pointer
-//             ground_truth_sub_.reset();
-
-//             // Create new subscriber to SLAM
-//             auto qos = rclcpp::QoS(10);
-//             slam_sub_ = this->create_subscription<dv_msgs::msg::SlamState>(
-//                 "/slam_data", qos, std::bind(&ConeSeenVisualNode::slam_state_callback, this, _1));
-            
-//             using_ground_truth_ = false;
-//             RCLCPP_INFO(this->get_logger(), "Now subscribed to /slam_data");
-            
-//             // Stop the timer
-//             slam_check_timer_->cancel();
-//             break; 
-//         }
-//     }
-// }
-
-// void ConeSeenVisualNode::car_state_callback(const eufs_msgs::msg::CarState::SharedPtr msg)
-// {
-//     x_ = msg->pose.pose.position.x;
-//     y_ = msg->pose.pose.position.y;
-//     yaw_ = quaternion_to_yaw(msg->pose.pose.orientation);
-// }
-
-// void ConeSeenVisualNode::slam_state_callback(const dv_msgs::msg::SlamState::SharedPtr msg)
-// {
-//     x_ = msg->pose.pose.position.x;
-//     y_ = msg->pose.pose.position.y;
-//     yaw_ = quaternion_to_yaw(msg->pose.pose.orientation);
-// }
 
 void ConeSeenVisualNode::cones_seen_visualisation(const dv_msgs::msg::IndexedTrack::SharedPtr msg)
 {
