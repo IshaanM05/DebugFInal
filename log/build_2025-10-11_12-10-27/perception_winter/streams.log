@@ -1,0 +1,29 @@
+[0.007s] Invoking command in '/home/ansh/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/ansh/Desktop/DebugFInal/build/perception_winter -- -j12 -l12
+[0.051s] [ 50%] Built target cone_visualizer_node
+[0.059s] [100%] Built target process_lidar_node
+[0.068s] Invoked command in '/home/ansh/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/ansh/Desktop/DebugFInal/build/perception_winter -- -j12 -l12
+[0.075s] Invoking command in '/home/ansh/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/ansh/Desktop/DebugFInal/build/perception_winter
+[0.081s] -- Install configuration: ""
+[0.081s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node
+[0.081s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/include
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/include/perception_winter
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/include/perception_winter/process_lidar.hpp
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/package_run_dependencies/perception_winter
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/parent_prefix_path/perception_winter
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.sh
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.dsv
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.sh
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.dsv
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.bash
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.sh
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.zsh
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.dsv
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.dsv
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/packages/perception_winter
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig.cmake
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig-version.cmake
+[0.082s] -- Up-to-date: /home/ansh/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.xml
+[0.084s] Invoked command in '/home/ansh/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/ansh/Desktop/DebugFInal/build/perception_winter

@@ -1,0 +1,88 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-008e094b11cec77a2c67.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "perception_winter",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "cone_visualizer_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-cone_visualizer_node-0b6a455dc68e2c8a5332.json",
+					"name" : "cone_visualizer_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "perception_winter_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-perception_winter_uninstall-d4094e32f18a0f19d43e.json",
+					"name" : "perception_winter_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "process_lidar_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-process_lidar_node-e9e8d60f2d667d43d42a.json",
+					"name" : "process_lidar_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-f5a87feef1adb08e7e7b.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ansh/Desktop/DebugFInal/build/perception_winter",
+		"source" : "/home/ansh/Desktop/DebugFInal/src/perception_winter"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

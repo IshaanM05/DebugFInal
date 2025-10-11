@@ -85,7 +85,7 @@ install(TARGETS
 )
 
 install(DIRECTORY include/ DESTINATION include)
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
+# install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
 
 set(MODEL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cone_model.onnx")
 if(EXISTS ${MODEL_FILE})
