@@ -9,15 +9,14 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/ModelCoefficients.h>
 #include <chrono>
+#include <Eigen/Dense>
 
 constexpr int NUM_BINS = 10;
-constexpr int NUM_CHANNELS = 2;
-constexpr float CONFIDENCE_THRESHOLD = 0.9;
-
+constexpr int NUM_CHANNELS = 2; 
+constexpr float CONFIDENCE_THRESHOLD = 0.9f;
 
 ProcessLidar::ProcessLidar() : Node("process_lidar"), env_(ORT_LOGGING_LEVEL_WARNING, "process_lidar_onnx")
 {
-    // Subscribers
     lidar_raw_input_sub_ = create_subscription<sensor_msgs::msg::PointCloud>(
         LIDAR_RAW_TOPIC, 10,
         [this](const sensor_msgs::msg::PointCloud::SharedPtr msg) {
@@ -30,13 +29,11 @@ ProcessLidar::ProcessLidar() : Node("process_lidar"), env_(ORT_LOGGING_LEVEL_WAR
             lidarRawCallback2(msg);
         });
 
-    // Publishers
     detected_cones_pub_ = create_publisher<dv_msgs::msg::IndexedTrack>("/perception/cones", 10);
 
-    // --- Load the ML model on startup ---
     loadOnnxModel();
 
-    RCLCPP_INFO(get_logger(), "Optimized LiDAR Node with ML model started");
+    RCLCPP_INFO(get_logger(), "Optimized LiDAR Node with Hybrid ML/Heuristic classification started");
 }
 
 ProcessLidar::~ProcessLidar()
@@ -55,7 +52,6 @@ void ProcessLidar::loadOnnxModel() {
 
         Ort::AllocatorWithDefaultOptions allocator;
 
-        // This now correctly creates a deep copy into the std::string vector
         auto input_name_ptr = session_->GetInputNameAllocated(0, allocator);
         input_node_names_.push_back(input_name_ptr.get());
 
@@ -77,8 +73,6 @@ void ProcessLidar::loadOnnxModel() {
     }
 }
 
-
-// PointCloud2 message processing
 std::vector<ProcessLidar::Point4D> ProcessLidar::extractPointsFromPointCloud2(
     const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg)
 {
@@ -113,7 +107,6 @@ std::vector<ProcessLidar::Point4D> ProcessLidar::extractPointsFromPointCloud2(
     return points;
 }
 
-// PointCloud message processing
 std::vector<ProcessLidar::Point4D> ProcessLidar::extractPointsFromPointCloud(
     const sensor_msgs::msg::PointCloud::SharedPtr cloud_msg)
 {
@@ -130,7 +123,6 @@ std::vector<ProcessLidar::Point4D> ProcessLidar::extractPointsFromPointCloud(
     return points;
 }
 
-// Main processing pipeline
 void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std_msgs::msg::Header& header)
 {
     (void)header; // Mark as unused
@@ -290,7 +282,6 @@ std::vector<ProcessLidar::Cluster> ProcessLidar::filterClustersBySize(const std:
     return valid_clusters;
 }
 
-
 std::vector<float> ProcessLidar::createFeatureVector(const Cluster& cluster) {
     std::vector<float> feature_vector(NUM_BINS * NUM_CHANNELS, 0.0f);
     if (cluster.empty()) return feature_vector;
@@ -307,7 +298,6 @@ std::vector<float> ProcessLidar::createFeatureVector(const Cluster& cluster) {
     double intensity_range = max_intensity - min_intensity;
     double bin_width = (z_range > 1e-6) ? z_range / NUM_BINS : 0.0;
 
-    // --- 2. Aggregate points into bins ---
     std::vector<double> sum_intensity(NUM_BINS, 0.0);
     std::vector<int> point_count(NUM_BINS, 0);
 
@@ -319,15 +309,12 @@ std::vector<float> ProcessLidar::createFeatureVector(const Cluster& cluster) {
         point_count[bin_index]++;
     }
 
-    // --- 3. Normalize the point counts (NEW LOGIC) ---
     auto min_max_it = std::minmax_element(point_count.begin(), point_count.end());
     float min_c = static_cast<float>(*min_max_it.first);
     float max_c = static_cast<float>(*min_max_it.second);
     float count_range = max_c - min_c;
 
-    // --- 4. Create the final interleaved feature vector ---
     for (int i = 0; i < NUM_BINS; ++i) {
-        // Feature 1: Normalized point count
         float normalized_count = 0.0f;
         if (count_range > 0) {
             normalized_count = (static_cast<float>(point_count[i]) - min_c) / count_range;
@@ -336,7 +323,6 @@ std::vector<float> ProcessLidar::createFeatureVector(const Cluster& cluster) {
         }
         feature_vector[i * NUM_CHANNELS + 0] = normalized_count;
         
-        // Feature 2: Average normalized intensity
         feature_vector[i * NUM_CHANNELS + 1] = (point_count[i] > 0) ? static_cast<float>(sum_intensity[i] / point_count[i]) : 0.0f;
     }
 
@@ -383,6 +369,46 @@ std::optional<int> ProcessLidar::predictColor(const Cluster& cluster) {
     return std::nullopt;
 }
 
+bool ProcessLidar::classifyCone(const std::vector<double> &y_vals, const std::vector<double> &x_vals)
+{
+    if (y_vals.size() < 3) return false;
+
+    int n = y_vals.size();
+    Eigen::MatrixXd A(n, 3);
+    Eigen::VectorXd y(n);
+
+    for (int i = 0; i < n; ++i) {
+        double x = x_vals.at(i);
+        A(i, 0) = x * x;
+        A(i, 1) = x;
+        A(i, 2) = 1.0;
+        y(i) = y_vals.at(i);
+    }
+
+    Eigen::Vector3d coeffs = A.colPivHouseholderQr().solve(y);
+
+    return coeffs(0) > 0;
+}
+
+std::vector<double> ProcessLidar::movingAverage(const std::vector<double> &data, int kernel)
+{
+    int n = data.size();
+    std::vector<double> result(n, 0.0);
+    if (kernel < 1 || n == 0) return data;
+
+    int half = kernel / 2;
+    for (int i = 0; i < n; ++i) {
+        int start = std::max(0, i - half);
+        int end = std::min(n - 1, i + half);
+        double sum = 0.0;
+        for (int j = start; j <= end; ++j) {
+            sum += data[j];
+        }
+        result[i] = sum / (end - start + 1);
+    }
+    return result;
+}
+
 void ProcessLidar::detectConesInClusters(const std::vector<Cluster>& clusters,
                                         std::vector<Point3D>& positions,
                                         std::vector<int>& colors)
@@ -391,12 +417,37 @@ void ProcessLidar::detectConesInClusters(const std::vector<Cluster>& clusters,
     colors.reserve(clusters.size());
 
     for (const auto& cluster : clusters) {
-        auto cone_pos = calculateConePosition(cluster);
-        auto predicted_color_opt = predictColor(cluster);
+        auto sorted_cluster = cluster;
+        std::sort(sorted_cluster.begin(), sorted_cluster.end(),
+                  [](const Point4D& a, const Point4D& b) { return a[2] > b[2]; });
 
-        if (predicted_color_opt.has_value()) {
-            positions.push_back(cone_pos);
-            colors.push_back(predicted_color_opt.value());
+        std::vector<double> intensity_vals;
+        std::vector<double> z_vals;
+        intensity_vals.reserve(sorted_cluster.size());
+        z_vals.reserve(sorted_cluster.size());
+
+        for (const auto& pt : sorted_cluster) {
+            intensity_vals.push_back(pt[3]);
+            z_vals.push_back(pt[2]);
+        }
+
+        int kernel = std::max(3, static_cast<int>(0.1 * intensity_vals.size()));
+        if (kernel % 2 == 0) kernel += 1;
+        std::vector<double> averaged_intensities = this->movingAverage(intensity_vals, kernel);
+        
+        bool is_yellow_heuristic = this->classifyCone(averaged_intensities, z_vals);
+        int heuristic_color = is_yellow_heuristic ? dv_msgs::msg::IndexedCone::YELLOW : dv_msgs::msg::IndexedCone::BLUE;
+
+        auto ml_color_opt = predictColor(cluster);
+
+        if (ml_color_opt.has_value()) {
+            int ml_color = ml_color_opt.value();
+
+            if (ml_color == heuristic_color) {
+                auto cone_pos = calculateConePosition(cluster);
+                positions.push_back(cone_pos);
+                colors.push_back(ml_color); 
+            }
         }
     }
 }
@@ -465,14 +516,10 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
 
     if (!track_msg.track.empty()) {
         detected_cones_pub_->publish(track_msg);
-        RCLCPP_INFO(get_logger(), "Detected cones - Yellow: %d, Blue: %d", yellow_count, blue_count);
+        RCLCPP_INFO(get_logger(), "Detected cones (Hybrid Method) - Yellow: %d, Blue: %d", yellow_count, blue_count);
     }
 }
 
-
-/////////////
-// Callbacks
-/////////////
 void ProcessLidar::lidarRawCallback(const sensor_msgs::msg::PointCloud::SharedPtr msg)
 {
     try {

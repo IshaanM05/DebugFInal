@@ -1,6 +1,4 @@
-// src/main.cpp
-
-#include "perception_winter/cone_seen_visual_node.hpp" // Adjust path as needed
+#include "perception_winter/cone_seen_visual_node.hpp"
 #include <rclcpp/rclcpp.hpp>
 
 int main(int argc, char * argv[])
