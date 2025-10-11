@@ -1,4 +1,0 @@
-Invoking command in '/home/ansh/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/ansh/Desktop/DebugFInal/build/perception_winter -- -j12 -l12
-Invoked command in '/home/ansh/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/ansh/Desktop/DebugFInal/build/perception_winter -- -j12 -l12
-Invoking command in '/home/ansh/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/ansh/Desktop/DebugFInal/build/perception_winter
-Invoked command in '/home/ansh/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/ansh/Desktop/DebugFInal/build/perception_winter
