@@ -39,8 +39,8 @@ constexpr double ROI_Z_MIN = -2.63;
 constexpr double ROI_Z_MAX = 3.50;
 
 // Car body dimensions
-constexpr double CAR_FRONT_X = 0.5;
-constexpr double CAR_SIDE_Y = 0.25;
+constexpr double CAR_FRONT_X = 0.0;
+constexpr double CAR_SIDE_Y = 0.0;
 
 // Cone parameters
 constexpr double CONE_BASE_RADIUS = 0.12;

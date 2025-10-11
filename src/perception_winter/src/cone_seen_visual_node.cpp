@@ -7,7 +7,7 @@ ConeSeenVisualNode::ConeSeenVisualNode() : Node("coneseen_visuals")
     RCLCPP_INFO(this->get_logger(), "ConeSeenVisuals node has been started.");
 
     // Declare and get parameters
-    this->declare_parameter<std::string>("frame_id", "Fr1A");
+    this->declare_parameter<std::string>("frame_id", "ouster");
     this->get_parameter("frame_id", frame_id_);
 
     // QoS Profile - USE IT!
@@ -90,7 +90,7 @@ void ConeSeenVisualNode::cones_seen_visualisation(const dv_msgs::msg::IndexedTra
         }
 
         // Remove lifetime since we're deleting all markers on each update
-        // marker.lifetime = rclcpp::Duration::from_seconds(2.0);
+        marker.lifetime = rclcpp::Duration::from_seconds(0.5);
 
         // Convert from local polar to local cartesian
         double local_x = cone.location.x * std::cos(cone.location.y);
@@ -106,8 +106,9 @@ void ConeSeenVisualNode::cones_seen_visualisation(const dv_msgs::msg::IndexedTra
             marker.pose.position.y = y_ + std::sin(yaw_) * local_x + std::cos(yaw_) * local_y;
         } else {
             // Use local frame directly
-            marker.pose.position.x = local_x + 1.532;
+            marker.pose.position.x = local_x;
             marker.pose.position.y = local_y;
+            marker.pose.position.z = -0.5;
         }
         
         cones_seen_array.markers.push_back(marker);
