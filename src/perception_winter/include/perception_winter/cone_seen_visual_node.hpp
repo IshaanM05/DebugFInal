@@ -32,3 +32,38 @@ private:
 };
 
 #endif
+
+// #ifndef CONE_SEEN_VISUAL_NODE_HPP_
+// #define CONE_SEEN_VISUAL_NODE_HPP_
+
+// #include "rclcpp/rclcpp.hpp"
+// #include "visualization_msgs/msg/marker_array.hpp"
+// #include "dv_msgs/msg/indexed_track.hpp"
+// #include "geometry_msgs/msg/quaternion.hpp"
+
+// #include <string>
+
+// class ConeSeenVisualNode : public rclcpp::Node
+// {
+// public:
+//     ConeSeenVisualNode();
+
+// private:
+//     // --- ROS2 Callback ---
+//     void cones_seen_visualisation(const dv_msgs::msg::IndexedTrack::SharedPtr msg);
+
+//     // --- Helper Function ---
+//     double quaternion_to_yaw(const geometry_msgs::msg::Quaternion& q);
+
+//     // --- ROS2 Members ---
+//     rclcpp::Subscription<dv_msgs::msg::IndexedTrack>::SharedPtr filtered_points_sub_;
+//     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr filtered_points_pub_;
+
+//     // --- Member Variables ---
+//     std::string frame_id_;
+//     double x_;
+//     double y_;
+//     double yaw_;
+// };
+
+// #endif // CONE_SEEN_VISUAL_NODE_HPP_
