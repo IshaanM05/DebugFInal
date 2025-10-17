@@ -17,6 +17,7 @@
 #include <chrono>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <filesystem>
+#include <chrono>
 
 using namespace perception_winter;
 
@@ -543,6 +544,8 @@ ProcessLidar::ProcessLidar() :
             lidarRawCallback2(msg);
         });
 
+    
+
     // Publishers
     detected_cones_pub_ = create_publisher<dv_msgs::msg::IndexedTrack>("/perception/cones", 10);
     filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
@@ -685,21 +688,35 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
 }
 
 void ProcessLidar::lidarRawCallback(const sensor_msgs::msg::PointCloud::SharedPtr msg) {
+    
+    auto start_time = std::chrono::steady_clock::now();
+
     try {
         auto points = PointCloudExtractor::fromPointCloud(msg);
         processPointCloudData(points, msg->header);
     } catch (const std::exception& e) {
         RCLCPP_ERROR(get_logger(), "PointCloud processing error: %s", e.what());
     }
+    auto end_time = std::chrono::steady_clock::now();  
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);  
+
+    RCLCPP_INFO(get_logger(), "PointCloud processing completed in %ld ms", duration.count());
 }
 
 void ProcessLidar::lidarRawCallback2(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+    
+    auto start_time = std::chrono::steady_clock::now();
+
     try {
         auto points = PointCloudExtractor::fromPointCloud2(msg);
         processPointCloudData(points, msg->header);
     } catch (const std::exception& e) {
         RCLCPP_ERROR(get_logger(), "PointCloud processing error: %s", e.what());
     }
+    auto end_time = std::chrono::steady_clock::now();  
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+    RCLCPP_INFO(get_logger(), "PointCloud2 processing completed in %ld ms", duration.count());
 }
 
 // Publishers (commented out - kept for reference)

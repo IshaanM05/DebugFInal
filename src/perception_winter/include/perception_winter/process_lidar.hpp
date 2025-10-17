@@ -37,8 +37,11 @@ namespace perception_winter {
 // Constants namespace for better organization
 namespace lidar_constants {
     // Topic names
-    constexpr auto LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
-    constexpr auto LIDAR_RAW_TOPIC2 = "/carmaker/pointcloud2";
+    //constexpr auto LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
+    constexpr auto LIDAR_RAW_TOPIC = "/velodyne_points";
+    //constexpr auto LIDAR_RAW_TOPIC2 = "/carmaker/pointcloud2";
+    constexpr auto LIDAR_RAW_TOPIC2 = "/velodyne_points";
+
 
     // Ground removal parameters from working code
     constexpr double RANSAC_THRESHOLD = 0.015;
