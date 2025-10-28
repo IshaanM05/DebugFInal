@@ -1,0 +1,32 @@
+[0.008s] Invoking command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --build /home/ishaan/Desktop/DebugFInal/build/perception_winter -- -j32 -l32
+[0.079s] [ 50%] [0mBuilt target cone_visualizer_node[0m
+[0.091s] [ 66%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o[0m
+[13.441s] [1m[32mLinking CXX executable process_lidar_node[0m
+[14.521s] [0mBuilt target process_lidar_node[0m
+[14.526s] Invoked command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --build /home/ishaan/Desktop/DebugFInal/build/perception_winter -- -j32 -l32
+[14.570s] Invoking command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --install /home/ishaan/Desktop/DebugFInal/build/perception_winter
+[14.614s] -- Install configuration: ""
+[14.614s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node
+[14.618s] -- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node" to ""
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/process_lidar.hpp
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/package_run_dependencies/perception_winter
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/parent_prefix_path/perception_winter
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.sh
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.dsv
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.sh
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.dsv
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.bash
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.sh
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.zsh
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.dsv
+[14.618s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.dsv
+[14.618s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/packages/perception_winter
+[14.619s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig.cmake
+[14.619s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig-version.cmake
+[14.619s] -- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.xml
+[14.620s] Invoked command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --install /home/ishaan/Desktop/DebugFInal/build/perception_winter

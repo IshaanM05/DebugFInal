@@ -1,0 +1,185 @@
+[0.000000] (-) TimerEvent: {}
+[0.000386] (perception_winter) JobQueued: {'identifier': 'perception_winter', 'dependencies': OrderedDict()}
+[0.000589] (perception_winter) JobStarted: {'identifier': 'perception_winter'}
+[0.006883] (perception_winter) JobProgress: {'identifier': 'perception_winter', 'progress': 'cmake'}
+[0.008084] (perception_winter) JobProgress: {'identifier': 'perception_winter', 'progress': 'build'}
+[0.008117] (perception_winter) Command: {'cmd': ['/home/ishaan/.local/bin/cmake', '--build', '/home/ishaan/Desktop/DebugFInal/build/perception_winter', '--', '-j32', '-l32'], 'cwd': '/home/ishaan/Desktop/DebugFInal/build/perception_winter', 'env': OrderedDict([('SHELL', '/bin/bash'), ('ROS_VERSION', '2'), ('SESSION_MANAGER', 'local/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:@/tmp/.ICE-unix/2378,unix/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:/tmp/.ICE-unix/2378'), ('QT_ACCESSIBILITY', '1'), ('COLORTERM', 'truecolor'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('GTK_IM_MODULE', 'ibus'), ('CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('_CE_M', ''), ('ROS_PYTHON_VERSION', '3'), ('LANGUAGE', 'en_IN:en'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('TERMINATOR_UUID', 'urn:uuid:5efaf287-0d31-401b-993c-a70516cf804c'), ('XMODIFIERS', '@im=ibus'), ('DESKTOP_SESSION', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('PWD', '/home/ishaan/Desktop/DebugFInal/build/perception_winter'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('LOGNAME', 'ishaan'), ('ament_index_environment_hooks', '/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/opt/ros/humble/share/gazebo_ros2_control'), ('XDG_SESSION_TYPE', 'x11'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('ROS_DOMAIN_ID', '50'), ('SYSTEMD_EXEC_PID', '2401'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('WINDOWPATH', '2'), ('HOME', '/home/ishaan'), ('USERNAME', 'ishaan'), ('LANG', 'en_US.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('VTE_VERSION', '6800'), ('AMENT_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/IITBDV-msgs/install/dv_msgs:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/opt/ros/humble'), ('CMAKE_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/IITBDV-msgs/install/dv_msgs:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble'), ('COLCON_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install:/home/ishaan/IITBDV-msgs/install:/home/ishaan/eufs_ws/install'), ('INVOCATION_ID', '2978b7ea704b46d18383a2dc88942a60'), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator23558193cd9818af7fe4d2c2f5bd9d00f'), ('MANAGERPID', '1973'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('_CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('XDG_SESSION_CLASS', 'user'), ('_CONDA_ROOT', '/home/ishaan/miniconda3'), ('IBUS_DISABLE_SNOOPER', '1'), ('PYTHONPATH', '/home/ishaan/IITBDV-msgs/install/dv_msgs/local/lib/python3.10/dist-packages:/home/ishaan/eufs_ws/install/eufs_launcher/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_tracks/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_rqt/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_racecar/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('TERM', 'xterm-256color'), ('_CE_CONDA', ''), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'ishaan'), ('_colcon_cd_root', '/opt/ros/humble/'), ('CONDA_SHLVL', '0'), ('DISPLAY', ':1'), ('SHLVL', '1'), ('QT_IM_MODULE', 'ibus'), ('IPGHOME', '/opt/ipg'), ('CONDA_PYTHON_EXE', '/home/ishaan/miniconda3/bin/python'), ('LD_LIBRARY_PATH', '/home/ishaan/IITBDV-msgs/install/dv_msgs/lib:/usr/local/cuda-12.6/lib64:/home/ishaan/eufs_ws/install/eufs_plugins/lib:/home/ishaan/eufs_ws/install/eufs_models/lib:/home/ishaan/eufs_ws/install/eufs_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('ROS_LOCALHOST_ONLY', '0'), ('LC_ALL', 'en_US.UTF-8'), ('JOURNAL_STREAM', '8:23686'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('CARMAKER_VER', '13.0.1'), ('PATH', '/home/ishaan/miniconda3/condabin:/opt/ipg/carmaker/linux64-13.0.1/bin:/usr/local/cuda-12.6/bin:/opt/ros/humble/bin:/home/ishaan/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/home/ishaan/.local/bin'), ('GDMSESSION', 'ubuntu'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('ROS_DISTRO', 'humble'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '11108'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/terminator.desktop'), ('EUFS_MASTER', '/home/ishaan/eufs_ws'), ('_', '/usr/bin/env')]), 'shell': False}
+[0.079039] (perception_winter) StdoutLine: {'line': b'[ 50%] \x1b[0mBuilt target cone_visualizer_node\x1b[0m\n'}
+[0.091152] (perception_winter) StdoutLine: {'line': b'[ 66%] \x1b[32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o\x1b[0m\n'}
+[0.099977] (-) TimerEvent: {}
+[0.200194] (-) TimerEvent: {}
+[0.300435] (-) TimerEvent: {}
+[0.400624] (-) TimerEvent: {}
+[0.500951] (-) TimerEvent: {}
+[0.601207] (-) TimerEvent: {}
+[0.701419] (-) TimerEvent: {}
+[0.801683] (-) TimerEvent: {}
+[0.901925] (-) TimerEvent: {}
+[1.002141] (-) TimerEvent: {}
+[1.102380] (-) TimerEvent: {}
+[1.202627] (-) TimerEvent: {}
+[1.302840] (-) TimerEvent: {}
+[1.403082] (-) TimerEvent: {}
+[1.503288] (-) TimerEvent: {}
+[1.603542] (-) TimerEvent: {}
+[1.703764] (-) TimerEvent: {}
+[1.804009] (-) TimerEvent: {}
+[1.904272] (-) TimerEvent: {}
+[2.004535] (-) TimerEvent: {}
+[2.104869] (-) TimerEvent: {}
+[2.205101] (-) TimerEvent: {}
+[2.305321] (-) TimerEvent: {}
+[2.405594] (-) TimerEvent: {}
+[2.505814] (-) TimerEvent: {}
+[2.606074] (-) TimerEvent: {}
+[2.706334] (-) TimerEvent: {}
+[2.806587] (-) TimerEvent: {}
+[2.906852] (-) TimerEvent: {}
+[3.007125] (-) TimerEvent: {}
+[3.107366] (-) TimerEvent: {}
+[3.207628] (-) TimerEvent: {}
+[3.307900] (-) TimerEvent: {}
+[3.408166] (-) TimerEvent: {}
+[3.508520] (-) TimerEvent: {}
+[3.608771] (-) TimerEvent: {}
+[3.709020] (-) TimerEvent: {}
+[3.809243] (-) TimerEvent: {}
+[3.909474] (-) TimerEvent: {}
+[4.009793] (-) TimerEvent: {}
+[4.110024] (-) TimerEvent: {}
+[4.210228] (-) TimerEvent: {}
+[4.310435] (-) TimerEvent: {}
+[4.410678] (-) TimerEvent: {}
+[4.510926] (-) TimerEvent: {}
+[4.611133] (-) TimerEvent: {}
+[4.711439] (-) TimerEvent: {}
+[4.811622] (-) TimerEvent: {}
+[4.911960] (-) TimerEvent: {}
+[5.012163] (-) TimerEvent: {}
+[5.112383] (-) TimerEvent: {}
+[5.212698] (-) TimerEvent: {}
+[5.312923] (-) TimerEvent: {}
+[5.413119] (-) TimerEvent: {}
+[5.513442] (-) TimerEvent: {}
+[5.613761] (-) TimerEvent: {}
+[5.714052] (-) TimerEvent: {}
+[5.814353] (-) TimerEvent: {}
+[5.914506] (-) TimerEvent: {}
+[6.014729] (-) TimerEvent: {}
+[6.115034] (-) TimerEvent: {}
+[6.215318] (-) TimerEvent: {}
+[6.315601] (-) TimerEvent: {}
+[6.415909] (-) TimerEvent: {}
+[6.516220] (-) TimerEvent: {}
+[6.616516] (-) TimerEvent: {}
+[6.716844] (-) TimerEvent: {}
+[6.817143] (-) TimerEvent: {}
+[6.917393] (-) TimerEvent: {}
+[7.017623] (-) TimerEvent: {}
+[7.117918] (-) TimerEvent: {}
+[7.218127] (-) TimerEvent: {}
+[7.318368] (-) TimerEvent: {}
+[7.418572] (-) TimerEvent: {}
+[7.518772] (-) TimerEvent: {}
+[7.619038] (-) TimerEvent: {}
+[7.719342] (-) TimerEvent: {}
+[7.819648] (-) TimerEvent: {}
+[7.919860] (-) TimerEvent: {}
+[8.020082] (-) TimerEvent: {}
+[8.120399] (-) TimerEvent: {}
+[8.220737] (-) TimerEvent: {}
+[8.320925] (-) TimerEvent: {}
+[8.421120] (-) TimerEvent: {}
+[8.521372] (-) TimerEvent: {}
+[8.621703] (-) TimerEvent: {}
+[8.722022] (-) TimerEvent: {}
+[8.822390] (-) TimerEvent: {}
+[8.922734] (-) TimerEvent: {}
+[9.023068] (-) TimerEvent: {}
+[9.123424] (-) TimerEvent: {}
+[9.223770] (-) TimerEvent: {}
+[9.324063] (-) TimerEvent: {}
+[9.424269] (-) TimerEvent: {}
+[9.524483] (-) TimerEvent: {}
+[9.624710] (-) TimerEvent: {}
+[9.724973] (-) TimerEvent: {}
+[9.825203] (-) TimerEvent: {}
+[9.925482] (-) TimerEvent: {}
+[10.025735] (-) TimerEvent: {}
+[10.125953] (-) TimerEvent: {}
+[10.226206] (-) TimerEvent: {}
+[10.326454] (-) TimerEvent: {}
+[10.426661] (-) TimerEvent: {}
+[10.526908] (-) TimerEvent: {}
+[10.627080] (-) TimerEvent: {}
+[10.727366] (-) TimerEvent: {}
+[10.827605] (-) TimerEvent: {}
+[10.927843] (-) TimerEvent: {}
+[11.028158] (-) TimerEvent: {}
+[11.128431] (-) TimerEvent: {}
+[11.228786] (-) TimerEvent: {}
+[11.329018] (-) TimerEvent: {}
+[11.429239] (-) TimerEvent: {}
+[11.529463] (-) TimerEvent: {}
+[11.629682] (-) TimerEvent: {}
+[11.729882] (-) TimerEvent: {}
+[11.830094] (-) TimerEvent: {}
+[11.930329] (-) TimerEvent: {}
+[12.030537] (-) TimerEvent: {}
+[12.130818] (-) TimerEvent: {}
+[12.231121] (-) TimerEvent: {}
+[12.331389] (-) TimerEvent: {}
+[12.431673] (-) TimerEvent: {}
+[12.532025] (-) TimerEvent: {}
+[12.632266] (-) TimerEvent: {}
+[12.732619] (-) TimerEvent: {}
+[12.832976] (-) TimerEvent: {}
+[12.933246] (-) TimerEvent: {}
+[13.033455] (-) TimerEvent: {}
+[13.133643] (-) TimerEvent: {}
+[13.233843] (-) TimerEvent: {}
+[13.334090] (-) TimerEvent: {}
+[13.434286] (-) TimerEvent: {}
+[13.441662] (perception_winter) StdoutLine: {'line': b'\x1b[1m\x1b[32mLinking CXX executable process_lidar_node\x1b[0m\n'}
+[13.534462] (-) TimerEvent: {}
+[13.634678] (-) TimerEvent: {}
+[13.734995] (-) TimerEvent: {}
+[13.835260] (-) TimerEvent: {}
+[13.935504] (-) TimerEvent: {}
+[14.035761] (-) TimerEvent: {}
+[14.136040] (-) TimerEvent: {}
+[14.236244] (-) TimerEvent: {}
+[14.336456] (-) TimerEvent: {}
+[14.436747] (-) TimerEvent: {}
+[14.521808] (perception_winter) StdoutLine: {'line': b'\x1b[0mBuilt target process_lidar_node\x1b[0m\n'}
+[14.526220] (perception_winter) CommandEnded: {'returncode': 0}
+[14.526487] (perception_winter) JobProgress: {'identifier': 'perception_winter', 'progress': 'install'}
+[14.536901] (-) TimerEvent: {}
+[14.569786] (perception_winter) Command: {'cmd': ['/home/ishaan/.local/bin/cmake', '--install', '/home/ishaan/Desktop/DebugFInal/build/perception_winter'], 'cwd': '/home/ishaan/Desktop/DebugFInal/build/perception_winter', 'env': OrderedDict([('SHELL', '/bin/bash'), ('ROS_VERSION', '2'), ('SESSION_MANAGER', 'local/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:@/tmp/.ICE-unix/2378,unix/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:/tmp/.ICE-unix/2378'), ('QT_ACCESSIBILITY', '1'), ('COLORTERM', 'truecolor'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('GTK_IM_MODULE', 'ibus'), ('CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('_CE_M', ''), ('ROS_PYTHON_VERSION', '3'), ('LANGUAGE', 'en_IN:en'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('TERMINATOR_UUID', 'urn:uuid:5efaf287-0d31-401b-993c-a70516cf804c'), ('XMODIFIERS', '@im=ibus'), ('DESKTOP_SESSION', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('PWD', '/home/ishaan/Desktop/DebugFInal/build/perception_winter'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('LOGNAME', 'ishaan'), ('ament_index_environment_hooks', '/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/opt/ros/humble/share/gazebo_ros2_control'), ('XDG_SESSION_TYPE', 'x11'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('ROS_DOMAIN_ID', '50'), ('SYSTEMD_EXEC_PID', '2401'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('WINDOWPATH', '2'), ('HOME', '/home/ishaan'), ('USERNAME', 'ishaan'), ('LANG', 'en_US.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('VTE_VERSION', '6800'), ('AMENT_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/IITBDV-msgs/install/dv_msgs:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/opt/ros/humble'), ('CMAKE_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/IITBDV-msgs/install/dv_msgs:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble'), ('COLCON_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install:/home/ishaan/IITBDV-msgs/install:/home/ishaan/eufs_ws/install'), ('INVOCATION_ID', '2978b7ea704b46d18383a2dc88942a60'), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator23558193cd9818af7fe4d2c2f5bd9d00f'), ('MANAGERPID', '1973'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('_CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('XDG_SESSION_CLASS', 'user'), ('_CONDA_ROOT', '/home/ishaan/miniconda3'), ('IBUS_DISABLE_SNOOPER', '1'), ('PYTHONPATH', '/home/ishaan/IITBDV-msgs/install/dv_msgs/local/lib/python3.10/dist-packages:/home/ishaan/eufs_ws/install/eufs_launcher/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_tracks/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_rqt/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_racecar/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('TERM', 'xterm-256color'), ('_CE_CONDA', ''), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'ishaan'), ('_colcon_cd_root', '/opt/ros/humble/'), ('CONDA_SHLVL', '0'), ('DISPLAY', ':1'), ('SHLVL', '1'), ('QT_IM_MODULE', 'ibus'), ('IPGHOME', '/opt/ipg'), ('CONDA_PYTHON_EXE', '/home/ishaan/miniconda3/bin/python'), ('LD_LIBRARY_PATH', '/home/ishaan/IITBDV-msgs/install/dv_msgs/lib:/usr/local/cuda-12.6/lib64:/home/ishaan/eufs_ws/install/eufs_plugins/lib:/home/ishaan/eufs_ws/install/eufs_models/lib:/home/ishaan/eufs_ws/install/eufs_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('ROS_LOCALHOST_ONLY', '0'), ('LC_ALL', 'en_US.UTF-8'), ('JOURNAL_STREAM', '8:23686'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('CARMAKER_VER', '13.0.1'), ('PATH', '/home/ishaan/miniconda3/condabin:/opt/ipg/carmaker/linux64-13.0.1/bin:/usr/local/cuda-12.6/bin:/opt/ros/humble/bin:/home/ishaan/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/home/ishaan/.local/bin'), ('GDMSESSION', 'ubuntu'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('ROS_DISTRO', 'humble'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '11108'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/terminator.desktop'), ('EUFS_MASTER', '/home/ishaan/eufs_ws'), ('_', '/usr/bin/env')]), 'shell': False}
+[14.614918] (perception_winter) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[14.615018] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node\n'}
+[14.618280] (perception_winter) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node" to ""\n'}
+[14.618356] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node\n'}
+[14.618411] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include\n'}
+[14.618441] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter\n'}
+[14.618515] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/process_lidar.hpp\n'}
+[14.618543] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp\n'}
+[14.618569] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx\n'}
+[14.618688] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/package_run_dependencies/perception_winter\n'}
+[14.618713] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/parent_prefix_path/perception_winter\n'}
+[14.618738] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.sh\n'}
+[14.618763] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.dsv\n'}
+[14.618786] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.sh\n'}
+[14.618810] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.dsv\n'}
+[14.618833] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.bash\n'}
+[14.618858] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.sh\n'}
+[14.618898] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.zsh\n'}
+[14.618927] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.dsv\n'}
+[14.618986] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.dsv\n'}
+[14.619042] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/packages/perception_winter\n'}
+[14.619168] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig.cmake\n'}
+[14.619252] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig-version.cmake\n'}
+[14.619339] (perception_winter) StdoutLine: {'line': b'-- Up-to-date: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.xml\n'}
+[14.620089] (perception_winter) CommandEnded: {'returncode': 0}
+[14.628308] (perception_winter) JobEnded: {'identifier': 'perception_winter', 'rc': 0}
+[14.628613] (-) EventReactorShutdown: {}

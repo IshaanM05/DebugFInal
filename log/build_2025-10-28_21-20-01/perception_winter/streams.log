@@ -1,0 +1,209 @@
+[0.006s] Invoking command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake /home/ishaan/Desktop/DebugFInal/src/perception_winter -DCMAKE_INSTALL_PREFIX=/home/ishaan/Desktop/DebugFInal/install/perception_winter
+[0.060s] [0mCMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+[0.060s]   Compatibility with CMake < 3.10 will be removed from a future version of
+[0.060s]   CMake.
+[0.060s] 
+[0.060s]   Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+[0.060s]   to tell CMake that the project requires at least <min> but has been updated
+[0.060s]   to work with policies introduced by <max> or earlier.
+[0.060s] 
+[0.060s] [0m
+[0.107s] -- The C compiler identification is GNU 11.4.0
+[0.154s] -- The CXX compiler identification is GNU 11.4.0
+[0.166s] -- Detecting C compiler ABI info
+[0.233s] -- Detecting C compiler ABI info - done
+[0.250s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.250s] -- Detecting C compile features
+[0.250s] -- Detecting C compile features - done
+[0.265s] -- Detecting CXX compiler ABI info
+[0.351s] -- Detecting CXX compiler ABI info - done
+[0.366s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.366s] -- Detecting CXX compile features
+[0.367s] -- Detecting CXX compile features - done
+[0.374s] -- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.492s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter
+[0.547s] -- Found rclcpp: 16.0.15 (/opt/ros/humble/share/rclcpp/cmake)
+[0.581s] -- Found rosidl_generator_c: 3.1.7 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.585s] -- Found rosidl_adapter: 3.1.7 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.591s] -- Found rosidl_generator_cpp: 3.1.7 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.599s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.610s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.642s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.644s] -- Found rmw_fastrtps_cpp: 6.2.8 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[0.707s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")
+[0.728s] -- Found FastRTPS: /opt/ros/humble/include
+[0.759s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.765s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[0.824s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[0.825s] -- Found Threads: TRUE
+[0.874s] -- Found sensor_msgs: 4.9.0 (/opt/ros/humble/share/sensor_msgs/cmake)
+[0.901s] -- Found visualization_msgs: 4.9.0 (/opt/ros/humble/share/visualization_msgs/cmake)
+[0.920s] -- Found pcl_conversions: 2.4.5 (/opt/ros/humble/share/pcl_conversions/cmake)
+[0.948s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:146 (find_package):
+[0.948s]   Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
+[0.948s]   variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
+[0.948s]   cmake_policy command to set the policy and suppress this warning.
+[0.948s] 
+[0.948s]   CMake variable EIGEN_ROOT is set to:
+[0.949s] 
+[0.949s]     /usr/include/eigen3
+[0.949s] 
+[0.949s]   For compatibility, find_package is ignoring the variable, but code in a
+[0.949s]   .cmake module might still use it.
+[0.949s] Call Stack (most recent call first):
+[0.949s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:299 (find_eigen)
+[0.949s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[0.949s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.949s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[0.949s]   CMakeLists.txt:17 (find_package)
+[0.949s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[0.949s] [0m
+[0.952s] -- Checking for module 'eigen3'
+[0.962s] --   Found eigen3, version 3.4.0
+[1.001s] -- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1")
+[1.001s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[1.002s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
+[1.002s]   Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+[1.002s]   --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+[1.002s]   set the policy and suppress this warning.
+[1.002s] 
+[1.002s] Call Stack (most recent call first):
+[1.002s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
+[1.002s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[1.002s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[1.002s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[1.002s]   CMakeLists.txt:17 (find_package)
+[1.002s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[1.002s] [0m
+[1.038s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/Modules/FindFLANN.cmake:44 (find_package):
+[1.038s]   Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
+[1.038s]   variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
+[1.038s]   cmake_policy command to set the policy and suppress this warning.
+[1.038s] 
+[1.038s]   CMake variable FLANN_ROOT is set to:
+[1.038s] 
+[1.038s]     /usr
+[1.038s] 
+[1.038s]   For compatibility, find_package is ignoring the variable, but code in a
+[1.039s]   .cmake module might still use it.
+[1.039s] Call Stack (most recent call first):
+[1.039s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:256 (find_package)
+[1.039s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:301 (find_flann)
+[1.039s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[1.039s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[1.039s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[1.039s]   CMakeLists.txt:17 (find_package)
+[1.039s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[1.039s] [0m
+[1.047s] -- Checking for module 'flann'
+[1.060s] --   Found flann, version 1.9.1
+[1.127s] -- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so
+[1.128s] -- FLANN found (include: /usr/include, lib: /usr/lib/x86_64-linux-gnu/libflann_cpp.so)
+[2.110s] -- Checking for module 'libusb-1.0'
+[2.130s] --   Found libusb-1.0, version 1.0.25
+[2.175s] -- Found libusb: /usr/lib/x86_64-linux-gnu/libusb-1.0.so
+[2.177s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.253s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.450s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
+[2.450s]   Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+[2.450s]   --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+[2.450s]   set the policy and suppress this warning.
+[2.450s] 
+[2.450s] Call Stack (most recent call first):
+[2.450s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
+[2.450s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[2.450s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[2.450s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[2.450s]   CMakeLists.txt:17 (find_package)
+[2.450s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[2.450s] [0m
+[2.457s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[2.462s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.467s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.660s] -- Found Qhull version 8.0.2
+[2.846s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[3.040s] -- Found PCL_COMMON: /usr/lib/x86_64-linux-gnu/libpcl_common.so
+[3.041s] -- Found PCL_KDTREE: /usr/lib/x86_64-linux-gnu/libpcl_kdtree.so
+[3.042s] -- Found PCL_OCTREE: /usr/lib/x86_64-linux-gnu/libpcl_octree.so
+[3.043s] -- Found PCL_SEARCH: /usr/lib/x86_64-linux-gnu/libpcl_search.so
+[3.043s] -- Found PCL_SAMPLE_CONSENSUS: /usr/lib/x86_64-linux-gnu/libpcl_sample_consensus.so
+[3.044s] -- Found PCL_FILTERS: /usr/lib/x86_64-linux-gnu/libpcl_filters.so
+[3.044s] -- Found PCL_2D: /usr/include/pcl-1.12
+[3.045s] -- Found PCL_GEOMETRY: /usr/include/pcl-1.12
+[3.045s] -- Found PCL_IO: /usr/lib/x86_64-linux-gnu/libpcl_io.so
+[3.046s] -- Found PCL_FEATURES: /usr/lib/x86_64-linux-gnu/libpcl_features.so
+[3.047s] -- Found PCL_ML: /usr/lib/x86_64-linux-gnu/libpcl_ml.so
+[3.048s] -- Found PCL_SEGMENTATION: /usr/lib/x86_64-linux-gnu/libpcl_segmentation.so
+[3.049s] -- Found PCL_VISUALIZATION: /usr/lib/x86_64-linux-gnu/libpcl_visualization.so
+[3.050s] -- Found PCL_SURFACE: /usr/lib/x86_64-linux-gnu/libpcl_surface.so
+[3.051s] -- Found PCL_REGISTRATION: /usr/lib/x86_64-linux-gnu/libpcl_registration.so
+[3.052s] -- Found PCL_KEYPOINTS: /usr/lib/x86_64-linux-gnu/libpcl_keypoints.so
+[3.053s] -- Found PCL_TRACKING: /usr/lib/x86_64-linux-gnu/libpcl_tracking.so
+[3.054s] -- Found PCL_RECOGNITION: /usr/lib/x86_64-linux-gnu/libpcl_recognition.so
+[3.055s] -- Found PCL_STEREO: /usr/lib/x86_64-linux-gnu/libpcl_stereo.so
+[3.056s] -- Found PCL_APPS: /usr/lib/x86_64-linux-gnu/libpcl_apps.so
+[3.057s] -- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.12
+[3.057s] -- Found PCL_MODELER: /usr/include/pcl-1.12
+[3.058s] -- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.12
+[3.059s] -- Found PCL_OUTOFCORE: /usr/lib/x86_64-linux-gnu/libpcl_outofcore.so
+[3.060s] -- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so
+[3.062s] -- Found dv_msgs: 0.0.0 (/home/ishaan/IITBDV-msgs/install/dv_msgs/share/dv_msgs/cmake)
+[3.087s] -- Found Open3D: /usr/lib/x86_64-linux-gnu/cmake/Open3D/Open3DConfig.cmake (found version "0.14.1")
+[3.088s] [33mCMake Warning (dev) at CMakeLists.txt:23 (find_package):
+[3.088s]   Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
+[3.088s]   Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
+[3.088s]   command to set the policy and suppress this warning.
+[3.088s] 
+[3.088s]   CMake variable PCL_ROOT is set to:
+[3.088s] 
+[3.088s]     /usr
+[3.088s] 
+[3.089s]   For compatibility, CMake is ignoring the variable.
+[3.089s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[3.089s] [0m
+[3.093s] -- Using ONNX Runtime from: /usr/local/onnxruntime-linux-x64-1.17.1
+[3.161s] -- Configuring done (3.1s)
+[3.183s] -- Generating done (0.0s)
+[3.186s] -- Build files have been written to: /home/ishaan/Desktop/DebugFInal/build/perception_winter
+[3.197s] Invoked command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake /home/ishaan/Desktop/DebugFInal/src/perception_winter -DCMAKE_INSTALL_PREFIX=/home/ishaan/Desktop/DebugFInal/install/perception_winter
+[3.198s] Invoking command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --build /home/ishaan/Desktop/DebugFInal/build/perception_winter -- -j32 -l32
+[3.276s] [ 33%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/main_1.cpp.o[0m
+[3.276s] [ 33%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/cone_seen_visual_node.cpp.o[0m
+[3.277s] [ 50%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o[0m
+[3.278s] [ 66%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/main.cpp.o[0m
+[7.391s] [01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:[m[K In member function ‘[01m[Kvoid perception_winter::ClusterProcessor::detectConesInClusters(const std::vector<std::vector<std::array<double, 4> > >&, const std::vector<bool, std::allocator<bool> >&, std::vector<std::array<double, 3> >&, std::vector<int>&, perception_winter::ConeClassifier&, perception_winter::HeuristicClassifier&)[m[K’:
+[7.391s] [01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:497:13:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kheuristic_color[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+[7.391s]   497 |         int [01;35m[Kheuristic_color[m[K = heuristic_color_opt.value();
+[7.391s]       |             [01;35m[K^~~~~~~~~~~~~~~[m[K
+[8.029s] [ 83%] [1m[32mLinking CXX executable cone_visualizer_node[0m
+[8.271s] [ 83%] [0mBuilt target cone_visualizer_node[0m
+[15.658s] [100%] [1m[32mLinking CXX executable process_lidar_node[0m
+[16.728s] [100%] [0mBuilt target process_lidar_node[0m
+[16.738s] Invoked command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --build /home/ishaan/Desktop/DebugFInal/build/perception_winter -- -j32 -l32
+[16.792s] Invoking command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --install /home/ishaan/Desktop/DebugFInal/build/perception_winter
+[16.835s] -- Install configuration: ""
+[16.835s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node
+[16.838s] -- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node" to ""
+[16.838s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node
+[16.840s] -- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node" to ""
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/process_lidar.hpp
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/package_run_dependencies/perception_winter
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/parent_prefix_path/perception_winter
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.sh
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.dsv
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.sh
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.dsv
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.bash
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.sh
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.zsh
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.dsv
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.dsv
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/packages/perception_winter
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig.cmake
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig-version.cmake
+[16.840s] -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.xml
+[16.842s] Invoked command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --install /home/ishaan/Desktop/DebugFInal/build/perception_winter
