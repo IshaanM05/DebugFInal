@@ -1,9 +1,3 @@
-/**
- * @file process_lidar.cpp
- * @brief Optimized LiDAR processing node implementation with Hybrid ML/Heuristic classification
- * @author Siddhesh Phadke
- */
-
 #include "perception_winter/process_lidar.hpp"
 #include <algorithm>
 #include <cmath>
@@ -19,8 +13,16 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <filesystem>
 #include <chrono>
+#include <atomic>
 
 using namespace perception_winter;
+
+static std::atomic<long long> g_true_positives_blue{0};
+static std::atomic<long long> g_true_positives_yellow{0};
+static std::atomic<long long> g_false_positives_blue{0};     // Predicted Blue, but was Yellow
+static std::atomic<long long> g_false_positives_yellow{0};   // Predicted Yellow, but was Blue
+static std::atomic<long long> g_rejected_as_blue{0};       // Was Blue, but rejected
+static std::atomic<long long> g_rejected_as_yellow{0};     // Was Yellow, but rejected
 
 // =============================================
 // ML CLASSIFIER IMPLEMENTATION
@@ -408,6 +410,7 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
     int rejected_by_points = 0;
     int rejected_by_height = 0;
     int rejected_by_width = 0;
+    int rejected_by_x_dist = 0; // Counter for the new filter
 
     for (const auto& cluster : clusters) {
         total_points_before += cluster.size();
@@ -438,17 +441,19 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
         double distance = std::sqrt(centroid_x * centroid_x + centroid_y * centroid_y);
 
         // Check for orange cone candidate during filtering
-        bool is_orange_candidate = (height > 0.35 && distance < 7.5);
+        bool is_orange_candidate = false;
         orange_candidates.push_back(is_orange_candidate);
 
         // Regular cone filtering
         bool valid_height = (height >= 0.15 && height <= 0.5);
         bool valid_width = (width <= 0.75);
+        bool valid_x_pos = (centroid_x <= lidar_constants::ROI_X_MAX); // Using the constant
 
         if (!valid_height) rejected_by_height++;
         if (!valid_width) rejected_by_width++;
+        if (!valid_x_pos) rejected_by_x_dist++; // Increment the new counter
 
-        if (valid_height && valid_width) {
+        if (valid_height && valid_width && valid_x_pos) { // Added the new condition
             valid_clusters.push_back(cluster);
             total_points_after += cluster.size();
         }
@@ -456,9 +461,9 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
 
     RCLCPP_INFO(rclcpp::get_logger("cluster_processor"),
                 "Cluster filtering: %zu -> %zu clusters, points: %d -> %d "
-                "(rejected: points=%d, height=%d, width=%d)",
+                "(rejected: points=%d, height=%d, width=%d, x_dist=%d)", // Updated log
                 clusters.size(), valid_clusters.size(), total_points_before, total_points_after,
-                rejected_by_points, rejected_by_height, rejected_by_width);
+                rejected_by_points, rejected_by_height, rejected_by_width, rejected_by_x_dist);
 
     return valid_clusters;
 }
@@ -472,49 +477,70 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
     positions.reserve(clusters.size());
     colors.reserve(clusters.size());
 
-    int ml_heuristic_agreement = 0;
     int orange_cones = 0;
-    int rejected_by_disagreement = 0;
 
     for (size_t i = 0; i < clusters.size(); ++i) {
         const auto& cluster = clusters[i];
-        bool is_orange_candidate = orange_candidates[i];
+        if (cluster.empty()) continue;
 
-        // --- 1. Check for Orange Cones First ---
-        if (is_orange_candidate) {
+        // --- 1. Handle Orange Cones (Assumed correct, not part of Blue/Yellow metrics) ---
+        if (orange_candidates[i]) {
             auto cone_pos = calculateConePosition(cluster);
             positions.push_back(cone_pos);
-            colors.push_back(dv_msgs::msg::IndexedCone::ORANGE_BIG); // Color code 2 for Orange
+            colors.push_back(dv_msgs::msg::IndexedCone::ORANGE_BIG);
             orange_cones++;
             continue;
         }
 
-        // --- 2. Perform Heuristic Classification for Blue/Yellow ---
-        auto heuristic_color_opt = heuristic_classifier.classify(cluster);
-        if (!heuristic_color_opt.has_value()) {
-            continue; // Skip if heuristic classification fails
+        // --- 2. Determine Ground Truth from Simulator Intensity ---
+        double total_intensity = 0.0;
+        for (const auto& point : cluster) {
+            total_intensity += point[3]; // Intensity is the 4th element
         }
-        int heuristic_color = heuristic_color_opt.value();
+        double avg_intensity = total_intensity / cluster.size();
+        
+        // Assumption: Simulator uses very high intensity for blue cones.
+        bool is_ground_truth_blue = (avg_intensity > 1e6);
 
-        // --- 3. Perform ML Classification for Blue/Yellow ---
+        // --- 3. Get Predictions from Both Classifiers ---
+        auto heuristic_color_opt = heuristic_classifier.classify(cluster);
         auto ml_color_opt = ml_classifier.classify(cluster);
 
-        // --- 4. Compare Results: Only accept if both methods agree ---
-        if (ml_color_opt.has_value()) {
-            if (ml_color_opt.value() == heuristic_color) {
+        // --- 4. Compare and Update Metrics ---
+        int final_color = -1; // -1 indicates no decision
+
+        if (ml_color_opt.has_value() && heuristic_color_opt.has_value()) {
+            // Decision Rule: Only accept if both classifiers agree.
+            if (ml_color_opt.value() == heuristic_color_opt.value()) {
+                final_color = ml_color_opt.value();
                 auto cone_pos = calculateConePosition(cluster);
                 positions.push_back(cone_pos);
-                colors.push_back(ml_color_opt.value());
-                ml_heuristic_agreement++;
-            } else {
-                rejected_by_disagreement++;
+                colors.push_back(final_color);
+                
+                // Update True/False Positive counters
+                if (final_color == dv_msgs::msg::IndexedCone::BLUE) {
+                    if (is_ground_truth_blue) g_true_positives_blue++;
+                    else g_false_positives_blue++; // Predicted Blue, was Yellow
+                } else { // Predicted Yellow
+                    if (!is_ground_truth_blue) g_true_positives_yellow++;
+                    else g_false_positives_yellow++; // Predicted Yellow, was Blue
+                }
             }
+        }
+        
+        // --- 5. Handle Rejections ---
+        if (final_color == -1) {
+            // If no decision was made (disagreement, low confidence, etc.)
+            if (is_ground_truth_blue) g_rejected_as_blue++;
+            else g_rejected_as_yellow++;
         }
     }
 
+    // Update the log to show the count of accepted cones only
+    long long accepted_cones = g_true_positives_blue + g_false_positives_yellow + g_true_positives_yellow + g_false_positives_blue;
     RCLCPP_INFO(rclcpp::get_logger("cluster_processor"), 
-                "Cone detection: ML+Heuristic agreement: %d, Orange cones: %d, Rejected by disagreement: %d",
-                ml_heuristic_agreement, orange_cones, rejected_by_disagreement);
+                "Cone detection: Accepted cones (ML+Heuristic agreement): %lld, Orange cones: %d",
+                accepted_cones, orange_cones);
 }
 
 void ClusterProcessor::printClusterStats(const std::vector<Cluster>& clusters, rclcpp::Logger logger) const {
@@ -687,7 +713,61 @@ ProcessLidar::ProcessLidar() :
 }
 
 ProcessLidar::~ProcessLidar() {
-    RCLCPP_INFO(get_logger(), "LiDAR Node shutdown");
+    RCLCPP_INFO(get_logger(), "------------------------------------");
+    RCLCPP_INFO(get_logger(), "--- Final Model Accuracy Report ---");
+
+    long long tp_blue = g_true_positives_blue.load();
+    long long tp_yellow = g_true_positives_yellow.load();
+    long long fp_blue = g_false_positives_blue.load();
+    long long fp_yellow = g_false_positives_yellow.load();
+    long long rej_blue = g_rejected_as_blue.load();
+    long long rej_yellow = g_rejected_as_yellow.load();
+
+    long long total_actual_blue = tp_blue + fp_yellow + rej_blue;
+    long long total_actual_yellow = tp_yellow + fp_blue + rej_yellow;
+    long long total_clusters = total_actual_blue + total_actual_yellow;
+
+    RCLCPP_INFO(get_logger(), "Total Blue/Yellow Clusters Encountered: %lld", total_clusters);
+    RCLCPP_INFO(get_logger(), " ");
+
+    if (total_actual_blue > 0) {
+        RCLCPP_INFO(get_logger(), "--- BLUE CONES (Actual: %lld) ---", total_actual_blue);
+        RCLCPP_INFO(get_logger(), "Correctly Detected (TP): %lld", tp_blue);
+        RCLCPP_INFO(get_logger(), "Incorrectly Detected as Yellow (FN): %lld", fp_yellow);
+        RCLCPP_INFO(get_logger(), "Rejected by Classifiers: %lld", rej_blue);
+        double blue_recall = 100.0 * tp_blue / total_actual_blue;
+        RCLCPP_INFO(get_logger(), "Recall (Sensitivity): %.2f%%", blue_recall);
+        if ((tp_blue + fp_blue) > 0) {
+            double blue_precision = 100.0 * tp_blue / (tp_blue + fp_blue);
+            RCLCPP_INFO(get_logger(), "Precision: %.2f%%", blue_precision);
+        }
+    }
+    
+    RCLCPP_INFO(get_logger(), " ");
+
+    if (total_actual_yellow > 0) {
+        RCLCPP_INFO(get_logger(), "--- YELLOW CONES (Actual: %lld) ---", total_actual_yellow);
+        RCLCPP_INFO(get_logger(), "Correctly Detected (TP): %lld", tp_yellow);
+        RCLCPP_INFO(get_logger(), "Incorrectly Detected as Blue (FN): %lld", fp_blue);
+        RCLCPP_INFO(get_logger(), "Rejected by Classifiers: %lld", rej_yellow);
+        double yellow_recall = 100.0 * tp_yellow / total_actual_yellow;
+        RCLCPP_INFO(get_logger(), "Recall (Sensitivity): %.2f%%", yellow_recall);
+        if ((tp_yellow + fp_yellow) > 0) {
+            double yellow_precision = 100.0 * tp_yellow / (tp_yellow + fp_yellow);
+            RCLCPP_INFO(get_logger(), "Precision: %.2f%%", yellow_precision);
+        }
+    }
+    
+    RCLCPP_INFO(get_logger(), " ");
+
+    if (total_clusters > 0) {
+        long long total_correct = tp_blue + tp_yellow;
+        double overall_accuracy = 100.0 * total_correct / total_clusters;
+        RCLCPP_INFO(get_logger(), "Overall Accuracy (Correct / (TP+FN+Rejected)): %.2f%%", overall_accuracy);
+    }
+    
+    RCLCPP_INFO(get_logger(), "------------------------------------");
+    RCLCPP_INFO(get_logger(), "LiDAR Node shutdown complete.");
 }
 
 void ProcessLidar::initializeComponents() {

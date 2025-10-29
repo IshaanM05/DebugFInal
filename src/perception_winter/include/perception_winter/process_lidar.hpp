@@ -1,9 +1,3 @@
-/**
- * @file process_lidar.hpp
- * @brief Optimized LiDAR processing node implementation
- * @author Siddhesh Phadke
- */
-
 #ifndef PROCESS_LIDAR_HPP_
 #define PROCESS_LIDAR_HPP_
 
@@ -38,7 +32,7 @@ namespace perception_winter {
 namespace lidar_constants {
     // Topic names
     constexpr auto LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
-    constexpr auto LIDAR_RAW_TOPIC2 = "/carmaker/pointcloud2";
+    constexpr auto LIDAR_RAW_TOPIC2 = "/velodyne_points";
 
     // Ground removal parameters from working code
     constexpr double RANSAC_THRESHOLD = 0.015;
@@ -56,6 +50,7 @@ namespace lidar_constants {
     constexpr double ROI_Y_MAX = 3.50;
     constexpr double ROI_Z_MIN = -0.63;
     constexpr double ROI_Z_MAX = 0.40;
+    constexpr double ROI_X_MAX = 10.0;
 
     // Car body dimensions from working code
     constexpr double CAR_FRONT_X = 1.5;
@@ -72,7 +67,7 @@ namespace lidar_constants {
     constexpr float Z_MIN = -0.640f;
     constexpr float Z_MAX = -0.300f;
     constexpr float BIN_WIDTH = (Z_MAX - Z_MIN) / NUM_BINS;
-    constexpr double CONFIDENCE_THRESHOLD = 0.995;
+    constexpr double CONFIDENCE_THRESHOLD = 0.99;
 }
 
 // Type aliases for better readability
