@@ -34,22 +34,38 @@ bool ConeClassifier::initialize(const std::string& model_path) {
     try {
         Ort::SessionOptions session_options;
         session_options.SetIntraOpNumThreads(1);
+        session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+        
         session_ = std::make_unique<Ort::Session>(env_, model_path.c_str(), session_options);
 
         Ort::AllocatorWithDefaultOptions allocator;
 
+        // Get input names
         auto input_name_ptr = session_->GetInputNameAllocated(0, allocator);
         input_node_names_.push_back(input_name_ptr.get());
 
+        // Get output names  
         auto output_name_ptr = session_->GetOutputNameAllocated(0, allocator);
         output_node_names_.push_back(output_name_ptr.get());
 
+        // Get input dimensions
         Ort::TypeInfo input_type_info = session_->GetInputTypeInfo(0);
         auto input_tensor_info = input_type_info.GetTensorTypeAndShapeInfo();
         input_node_dims_ = input_tensor_info.GetShape();
 
+        RCLCPP_INFO(rclcpp::get_logger("cone_classifier"), 
+                   "ML Classifier initialized successfully with confidence threshold: %.2f", 
+                   confidence_threshold_);
         return true;
-    } catch (const Ort::Exception& e) {
+    } 
+    catch (const Ort::Exception& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("cone_classifier"), 
+                    "ONNX initialization failed: %s", e.what());
+        return false;
+    }
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("cone_classifier"), 
+                    "ML Classifier initialization failed: %s", e.what());
         return false;
     }
 }
@@ -58,35 +74,44 @@ std::vector<float> ConeClassifier::createFeatureVector(const Cluster& cluster) c
     std::vector<float> feature_vector(lidar_constants::NUM_BINS * 2, 0.0f);
     if (cluster.empty()) return feature_vector;
 
-    // --- Find min/max for normalization ---
+    // Calculate normalization parameters
     double min_z = cluster[0][2], max_z = cluster[0][2];
     double min_intensity = cluster[0][3], max_intensity = cluster[0][3];
+    
     for (const auto& point : cluster) {
-        min_z = std::min(min_z, point[2]); max_z = std::max(max_z, point[2]);
-        min_intensity = std::min(min_intensity, point[3]); max_intensity = std::max(max_intensity, point[3]);
+        min_z = std::min(min_z, point[2]); 
+        max_z = std::max(max_z, point[2]);
+        min_intensity = std::min(min_intensity, point[3]); 
+        max_intensity = std::max(max_intensity, point[3]);
     }
 
     double z_range = max_z - min_z;
     double intensity_range = max_intensity - min_intensity;
     double bin_width = (z_range > 1e-6) ? z_range / lidar_constants::NUM_BINS : 0.0;
 
+    // Bin points and calculate statistics
     std::vector<double> sum_intensity(lidar_constants::NUM_BINS, 0.0);
     std::vector<int> point_count(lidar_constants::NUM_BINS, 0);
 
     for (const auto& point : cluster) {
-        double norm_intensity = (intensity_range > 1e-6) ? (point[3] - min_intensity) / intensity_range : 0.0;
-        int bin_index = (bin_width > 0) ? static_cast<int>((point[2] - min_z) / bin_width) : 0;
+        double norm_intensity = (intensity_range > 1e-6) ? 
+                               (point[3] - min_intensity) / intensity_range : 0.0;
+        int bin_index = (bin_width > 0) ? 
+                       static_cast<int>((point[2] - min_z) / bin_width) : 0;
         bin_index = std::min(bin_index, lidar_constants::NUM_BINS - 1);
+        
         sum_intensity[bin_index] += norm_intensity;
         point_count[bin_index]++;
     }
 
+    // Normalize counts
     auto min_max_it = std::minmax_element(point_count.begin(), point_count.end());
     float min_c = static_cast<float>(*min_max_it.first);
     float max_c = static_cast<float>(*min_max_it.second);
     float count_range = max_c - min_c;
 
     for (int i = 0; i < lidar_constants::NUM_BINS; ++i) {
+        // Normalized point count
         float normalized_count = 0.0f;
         if (count_range > 0) {
             normalized_count = (static_cast<float>(point_count[i]) - min_c) / count_range;
@@ -95,58 +120,71 @@ std::vector<float> ConeClassifier::createFeatureVector(const Cluster& cluster) c
         }
         feature_vector[i * 2 + 0] = normalized_count;
         
-        feature_vector[i * 2 + 1] = (point_count[i] > 0) ? static_cast<float>(sum_intensity[i] / point_count[i]) : 0.0f;
+        // Average normalized intensity
+        feature_vector[i * 2 + 1] = (point_count[i] > 0) ? 
+                                   static_cast<float>(sum_intensity[i] / point_count[i]) : 0.0f;
     }
 
     return feature_vector;
 }
 
 std::optional<int> ConeClassifier::classify(const Cluster& cluster) {
-    std::vector<float> feature_vector = createFeatureVector(cluster);
-    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-
-    std::vector<int64_t> concrete_shape = input_node_dims_;
-    if (!concrete_shape.empty() && concrete_shape[0] == -1) {
-        concrete_shape[0] = 1; 
+    if (cluster.empty()) {
+        return std::nullopt;
     }
 
-    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
-        memory_info, feature_vector.data(), feature_vector.size(),
-        concrete_shape.data(), concrete_shape.size());
+    try {
+        std::vector<float> feature_vector = createFeatureVector(cluster);
+        Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
 
-    std::vector<const char*> input_names_char;
-    input_names_char.reserve(input_node_names_.size());
-    for (const auto& s : input_node_names_) {
-        input_names_char.push_back(s.c_str());
+        std::vector<int64_t> concrete_shape = input_node_dims_;
+        if (!concrete_shape.empty() && concrete_shape[0] == -1) {
+            concrete_shape[0] = 1; 
+        }
+
+        Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
+            memory_info, feature_vector.data(), feature_vector.size(),
+            concrete_shape.data(), concrete_shape.size());
+
+        std::vector<const char*> input_names_char;
+        input_names_char.reserve(input_node_names_.size());
+        for (const auto& s : input_node_names_) {
+            input_names_char.push_back(s.c_str());
+        }
+
+        std::vector<const char*> output_names_char;
+        output_names_char.reserve(output_node_names_.size());
+        for (const auto& s : output_node_names_) {
+            output_names_char.push_back(s.c_str());
+        }
+
+        auto output_tensors = session_->Run(Ort::RunOptions{nullptr},
+                                           input_names_char.data(), &input_tensor, 1,
+                                           output_names_char.data(), 1);
+        
+        float prediction_prob = *output_tensors[0].GetTensorMutableData<float>();
+
+        // Apply confidence thresholding
+        if (prediction_prob > confidence_threshold_) {
+            return dv_msgs::msg::IndexedCone::BLUE;
+        } else if ((1.0 - prediction_prob) > confidence_threshold_) {
+            return dv_msgs::msg::IndexedCone::YELLOW;
+        }
+        
+        return std::nullopt;
     }
-
-    std::vector<const char*> output_names_char;
-    output_names_char.reserve(output_node_names_.size());
-    for (const auto& s : output_node_names_) {
-        output_names_char.push_back(s.c_str());
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("cone_classifier"), 
+                    "Classification failed: %s", e.what());
+        return std::nullopt;
     }
-
-    auto output_tensors = session_->Run(Ort::RunOptions{nullptr},
-                                         input_names_char.data(), &input_tensor, 1,
-                                         output_names_char.data(), 1);
-    
-    float prediction_prob = *output_tensors[0].GetTensorMutableData<float>();
-
-    if (prediction_prob > confidence_threshold_) {
-        return dv_msgs::msg::IndexedCone::BLUE;
-    } else if ((1.0 - prediction_prob) > confidence_threshold_) {
-        return dv_msgs::msg::IndexedCone::YELLOW;
-    }
-    
-    return std::nullopt;
 }
 
 // =============================================
 // HEURISTIC CLASSIFIER IMPLEMENTATION
 // =============================================
 
-bool HeuristicClassifier::classifyCone(const std::vector<double> &y_vals, const std::vector<double> &x_vals)
-{
+bool HeuristicClassifier::classifyCone(const std::vector<double> &y_vals, const std::vector<double> &x_vals) {
     if (y_vals.size() < 3) return false;
 
     int n = y_vals.size();
@@ -162,12 +200,10 @@ bool HeuristicClassifier::classifyCone(const std::vector<double> &y_vals, const 
     }
 
     Eigen::Vector3d coeffs = A.colPivHouseholderQr().solve(y);
-
-    return coeffs(0) > 0;
+    return coeffs(0) > 0; // Positive quadratic coefficient indicates upward curve (yellow)
 }
 
-std::vector<double> HeuristicClassifier::movingAverage(const std::vector<double> &data, int kernel)
-{
+std::vector<double> HeuristicClassifier::movingAverage(const std::vector<double> &data, int kernel) {
     int n = data.size();
     std::vector<double> result(n, 0.0);
     if (kernel < 1 || n == 0) return data;
@@ -188,26 +224,37 @@ std::vector<double> HeuristicClassifier::movingAverage(const std::vector<double>
 std::optional<int> HeuristicClassifier::classify(const Cluster& cluster) {
     if (cluster.size() < 3) return std::nullopt;
 
-    auto sorted_cluster = cluster;
-    std::sort(sorted_cluster.begin(), sorted_cluster.end(),
-              [](const Point4D& a, const Point4D& b) { return a[2] > b[2]; });
+    try {
+        // Sort by height for consistent analysis
+        auto sorted_cluster = cluster;
+        std::sort(sorted_cluster.begin(), sorted_cluster.end(),
+                  [](const Point4D& a, const Point4D& b) { return a[2] > b[2]; });
 
-    std::vector<double> intensity_vals;
-    std::vector<double> z_vals;
-    intensity_vals.reserve(sorted_cluster.size());
-    z_vals.reserve(sorted_cluster.size());
+        // Extract intensity and height profiles
+        std::vector<double> intensity_vals;
+        std::vector<double> z_vals;
+        intensity_vals.reserve(sorted_cluster.size());
+        z_vals.reserve(sorted_cluster.size());
 
-    for (const auto& pt : sorted_cluster) {
-        intensity_vals.push_back(pt[3]);
-        z_vals.push_back(pt[2]);
+        for (const auto& pt : sorted_cluster) {
+            intensity_vals.push_back(pt[3]);
+            z_vals.push_back(pt[2]);
+        }
+
+        // Apply smoothing for noise reduction
+        int kernel = std::max(3, static_cast<int>(0.1 * intensity_vals.size()));
+        if (kernel % 2 == 0) kernel += 1;
+        std::vector<double> averaged_intensities = this->movingAverage(intensity_vals, kernel);
+        
+        // Classify based on intensity profile curvature
+        bool is_yellow_heuristic = this->classifyCone(averaged_intensities, z_vals);
+        return is_yellow_heuristic ? dv_msgs::msg::IndexedCone::YELLOW : dv_msgs::msg::IndexedCone::BLUE;
     }
-
-    int kernel = std::max(3, static_cast<int>(0.1 * intensity_vals.size()));
-    if (kernel % 2 == 0) kernel += 1;
-    std::vector<double> averaged_intensities = this->movingAverage(intensity_vals, kernel);
-    
-    bool is_yellow_heuristic = this->classifyCone(averaged_intensities, z_vals);
-    return is_yellow_heuristic ? dv_msgs::msg::IndexedCone::YELLOW : dv_msgs::msg::IndexedCone::BLUE;
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("heuristic_classifier"), 
+                    "Heuristic classification failed: %s", e.what());
+        return std::nullopt;
+    }
 }
 
 // =============================================
@@ -215,7 +262,13 @@ std::optional<int> HeuristicClassifier::classify(const Cluster& cluster) {
 // =============================================
 
 bool PointCloudProcessor::filterCarBodyAndROI(const std::vector<Point4D>& input_points, 
-                                              PointCloudPtr output_cloud) {
+                                              PointCloudPtr output_cloud,
+                                              rclcpp::Logger logger) {
+    if (input_points.empty()) {
+        RCLCPP_WARN(logger, "Empty input point cloud for filtering");
+        return false;
+    }
+
     output_cloud->reserve(input_points.size());
     
     int car_body_points = 0;
@@ -223,21 +276,20 @@ bool PointCloudProcessor::filterCarBodyAndROI(const std::vector<Point4D>& input_
     int outside_roi_points = 0;
     int valid_points = 0;
     
-    RCLCPP_DEBUG(rclcpp::get_logger("point_cloud_processor"),
-                "Starting ROI filtering with %zu input points", input_points.size());
+    RCLCPP_DEBUG(logger, "Starting ROI filtering with %zu input points", input_points.size());
     
     for (const auto& point : input_points) {
         double x = point[0];
         double y = point[1];
         double z = point[2];
         
-        // Skip points behind the car
+        // Skip points behind the car (redundant safety check)
         if (x <= 0) {
             behind_car_points++;
             continue;
         }
         
-        // Skip points that are on the car body
+        // Skip points that are on the car body (primary exclusion)
         bool on_car_body = (x <= lidar_constants::CAR_FRONT_X) && 
                           (std::abs(y) <= lidar_constants::CAR_SIDE_Y);
         if (on_car_body) {
@@ -245,7 +297,7 @@ bool PointCloudProcessor::filterCarBodyAndROI(const std::vector<Point4D>& input_
             continue;
         }
         
-        // Apply ROI filtering in one step
+        // Apply ROI filtering (secondary validation)
         bool in_roi_y = (y >= lidar_constants::ROI_Y_MIN) && (y <= lidar_constants::ROI_Y_MAX);
         bool in_roi_z = (z >= lidar_constants::ROI_Z_MIN) && (z <= lidar_constants::ROI_Z_MAX);
         
@@ -262,25 +314,30 @@ bool PointCloudProcessor::filterCarBodyAndROI(const std::vector<Point4D>& input_
         }
     }
     
-    RCLCPP_INFO(rclcpp::get_logger("point_cloud_processor"),
-                "ROI filtering: %zu -> %zu points (behind: %d, car_body: %d, outside_roi: %d, valid: %d)", 
-                input_points.size(), output_cloud->size(), behind_car_points, car_body_points, outside_roi_points, valid_points);
+    RCLCPP_INFO(logger,
+               "ROI filtering: %zu -> %zu points (behind: %d, car_body: %d, outside_roi: %d, valid: %d)", 
+               input_points.size(), output_cloud->size(), behind_car_points, 
+               car_body_points, outside_roi_points, valid_points);
     
     return !output_cloud->empty();
 }
 
 bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
-                                    PointCloudPtr non_ground_cloud) {
-    if (cloud->empty()) return false;
+                                           PointCloudPtr non_ground_cloud,
+                                           rclcpp::Logger logger) {
+    if (cloud->empty()) {
+        RCLCPP_WARN(logger, "Empty cloud for ground removal");
+        return false;
+    }
 
-    RCLCPP_DEBUG(rclcpp::get_logger("point_cloud_processor"),
-                "Starting ground removal with %zu points", cloud->size());
+    RCLCPP_DEBUG(logger, "Starting ground removal with %zu points", cloud->size());
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
     pcl::SACSegmentation<pcl::PointXYZI> seg;
     pcl::ExtractIndices<pcl::PointXYZI> extract;
 
+    // Configure RANSAC parameters
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
@@ -292,8 +349,10 @@ bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
     std::optional<Eigen::Vector3f> reference_normal;
     int iterations = 0;
 
+    // Iterative ground plane removal
     while (remaining_cloud->size() > lidar_constants::MIN_POINTS_FOR_PLANE && 
            iterations < lidar_constants::MAX_GROUND_ITERATIONS) {
+        
         int dynamic_max_iter = std::min(static_cast<int>(remaining_cloud->size() / 200), 
                                        lidar_constants::MAX_GROUND_ITERATIONS);
         if (iterations >= dynamic_max_iter) break;
@@ -312,6 +371,7 @@ bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
             reference_normal = current_normal;
         }
 
+        // Extract current ground plane
         auto current_ground_plane = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         extract.setInputCloud(remaining_cloud);
         extract.setIndices(inliers);
@@ -319,6 +379,7 @@ bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
         extract.filter(*current_ground_plane);
         *ground_cloud += *current_ground_plane;
 
+        // Update remaining cloud
         auto next_remaining = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         extract.setNegative(true);
         extract.filter(*next_remaining);
@@ -328,17 +389,19 @@ bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
 
     *non_ground_cloud = *remaining_cloud;
     
-    RCLCPP_INFO(rclcpp::get_logger("point_cloud_processor"),
-                "Ground removal: %zu -> %zu points (%zu ground points removed in %d iterations)",
-                cloud->size(), non_ground_cloud->size(), ground_cloud->size(), iterations);
+    RCLCPP_INFO(logger,
+               "Ground removal: %zu -> %zu points (%zu ground points removed in %d iterations)",
+               cloud->size(), non_ground_cloud->size(), ground_cloud->size(), iterations);
     
     return !non_ground_cloud->empty();
 }
 
 bool PointCloudProcessor::isValidGroundPlane(const Eigen::Vector3f& normal, 
                                             const std::optional<Eigen::Vector3f>& reference_normal) const {
+    // Check normal orientation
     if (normal.z() < lidar_constants::MIN_Z_NORMAL_COMPONENT) return false;
 
+    // Check consistency with reference normal
     if (reference_normal.has_value()) {
         double dot_product = normal.dot(reference_normal.value());
         double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
@@ -353,53 +416,62 @@ bool PointCloudProcessor::isValidGroundPlane(const Eigen::Vector3f& normal,
 // CLUSTER PROCESSOR IMPLEMENTATION
 // =============================================
 
-std::vector<Cluster> ClusterProcessor::clusterPoints(const PointCloudPtr cloud) {
-    if (cloud->empty()) return {};
-
-    RCLCPP_DEBUG(rclcpp::get_logger("cluster_processor"),
-                "Starting clustering with %zu points", cloud->size());
-
-    auto o3d_pcd = std::make_shared<open3d::geometry::PointCloud>();
-    o3d_pcd->points_.reserve(cloud->size());
-    
-    for (const auto& point : cloud->points) {
-        o3d_pcd->points_.emplace_back(point.x, point.y, point.z);
+std::vector<Cluster> ClusterProcessor::clusterPoints(const PointCloudPtr cloud, rclcpp::Logger logger) {
+    if (cloud->empty()) {
+        RCLCPP_WARN(logger, "Empty cloud for clustering");
+        return {};
     }
 
-    auto labels = o3d_pcd->ClusterDBSCAN(lidar_constants::DBSCAN_EPSILON, 
-                                        lidar_constants::DBSCAN_MINPOINTS, false);
-    
-    int max_label = 0;
-    if (!labels.empty()) {
-        max_label = *std::max_element(labels.begin(), labels.end());
-    }
-    
-    std::vector<Cluster> clusters(max_label + 1);
-    int noise_points = 0;
-    
-    for (size_t i = 0; i < labels.size(); ++i) {
-        int label = labels[i];
-        if (label >= 0) {
-            const auto& point = cloud->points[i];
-            clusters[label].push_back({point.x, point.y, point.z, point.intensity});
-        } else {
-            noise_points++;
+    RCLCPP_DEBUG(logger, "Starting clustering with %zu points", cloud->size());
+
+    try {
+        auto o3d_pcd = std::make_shared<open3d::geometry::PointCloud>();
+        o3d_pcd->points_.reserve(cloud->size());
+        
+        for (const auto& point : cloud->points) {
+            o3d_pcd->points_.emplace_back(point.x, point.y, point.z);
         }
+
+        auto labels = o3d_pcd->ClusterDBSCAN(lidar_constants::DBSCAN_EPSILON, 
+                                            lidar_constants::DBSCAN_MINPOINTS, false);
+        
+        int max_label = 0;
+        if (!labels.empty()) {
+            max_label = *std::max_element(labels.begin(), labels.end());
+        }
+        
+        std::vector<Cluster> clusters(max_label + 1);
+        int noise_points = 0;
+        
+        for (size_t i = 0; i < labels.size(); ++i) {
+            int label = labels[i];
+            if (label >= 0) {
+                const auto& point = cloud->points[i];
+                clusters[label].push_back({point.x, point.y, point.z, point.intensity});
+            } else {
+                noise_points++;
+            }
+        }
+
+        // Remove empty clusters
+        clusters.erase(std::remove_if(clusters.begin(), clusters.end(),
+            [](const Cluster& c) { return c.empty(); }), clusters.end());
+
+        RCLCPP_INFO(logger,
+                   "Clustering: %zu points -> %zu clusters (noise points: %d)",
+                   cloud->size(), clusters.size(), noise_points);
+        
+        return clusters;
     }
-
-    // Remove empty clusters
-    clusters.erase(std::remove_if(clusters.begin(), clusters.end(),
-        [](const Cluster& c) { return c.empty(); }), clusters.end());
-
-    RCLCPP_INFO(rclcpp::get_logger("cluster_processor"),
-                "Clustering: %zu points -> %zu clusters (noise points: %d)",
-                cloud->size(), clusters.size(), noise_points);
-    
-    return clusters;
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(logger, "Clustering failed: %s", e.what());
+        return {};
+    }
 }
 
 std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cluster>& clusters, 
-                                                           std::vector<bool>& orange_candidates) {
+                                                           std::vector<bool>& orange_candidates,
+                                                           rclcpp::Logger logger) {
     std::vector<Cluster> valid_clusters;
     valid_clusters.reserve(clusters.size());
     orange_candidates.clear();
@@ -415,12 +487,14 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
     for (const auto& cluster : clusters) {
         total_points_before += cluster.size();
         
-        if (cluster.size() < 4) {
+        // Minimum points check
+        if (cluster.size() < lidar_constants::MIN_CLUSTER_POINTS) {
             rejected_by_points++;
             orange_candidates.push_back(false);
             continue;
         }
 
+        // Calculate cluster properties
         double min_x = cluster[0][0], max_x = cluster[0][0];
         double min_y = cluster[0][1], max_y = cluster[0][1];
         double min_z = cluster[0][2], max_z = cluster[0][2];
@@ -438,7 +512,6 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
         double width = std::max(max_x - min_x, max_y - min_y);
         double centroid_x = sum_x / cluster.size();
         double centroid_y = sum_y / cluster.size();
-        double distance = std::sqrt(centroid_x * centroid_x + centroid_y * centroid_y);
 
         // Check for orange cone candidate during filtering
         bool is_orange_candidate = false;
@@ -470,10 +543,11 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
 
 void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& clusters,
                                             const std::vector<bool>& orange_candidates,
-                                            std::vector<Point3D>& positions,
+                                            std::vector<Point3D>& positions, 
                                             std::vector<int>& colors,
                                             ConeClassifier& ml_classifier,
-                                            HeuristicClassifier& heuristic_classifier) {
+                                            HeuristicClassifier& heuristic_classifier,
+                                            rclcpp::Logger logger) {
     positions.reserve(clusters.size());
     colors.reserve(clusters.size());
 
@@ -482,11 +556,13 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
     for (size_t i = 0; i < clusters.size(); ++i) {
         const auto& cluster = clusters[i];
         if (cluster.empty()) continue;
+        if (cluster.empty()) continue;
 
         // --- 1. Handle Orange Cones (Assumed correct, not part of Blue/Yellow metrics) ---
         if (orange_candidates[i]) {
             auto cone_pos = calculateConePosition(cluster);
             positions.push_back(cone_pos);
+            colors.push_back(dv_msgs::msg::IndexedCone::ORANGE_BIG);
             colors.push_back(dv_msgs::msg::IndexedCone::ORANGE_BIG);
             orange_cones++;
             continue;
@@ -564,19 +640,17 @@ void ClusterProcessor::printClusterStats(const std::vector<Cluster>& clusters, r
             min_y = std::min(min_y, point[1]);
             max_y = std::max(max_y, point[1]);
         }
-        avg_intensity /= cluster.size();
-        double height = max_z - min_z;
-        double width_x = max_x - min_x;
-        double width_y = max_y - min_y;
-        
-        RCLCPP_INFO(logger, "  Cluster %zu: points=%zu, height=%.3f, width=(%.3f,%.3f), avg_intensity=%.3f", 
-                   i, cluster.size(), height, width_x, width_y, avg_intensity);
     }
+
+    RCLCPP_INFO(logger, 
+               "Cone detection: Accepted cones (ML+Heuristic agreement): %d, Orange cones: %d",
+               accepted_cones, orange_cones);
 }
 
 Point3D ClusterProcessor::calculateConePosition(const Cluster& cluster) {
     double min_x = cluster[0][0], max_x = cluster[0][0];
     double min_y = cluster[0][1], max_y = cluster[0][1];
+    
     for (const auto& point : cluster) {
         min_x = std::min(min_x, point[0]);
         max_x = std::max(max_x, point[0]);
@@ -587,6 +661,7 @@ Point3D ClusterProcessor::calculateConePosition(const Cluster& cluster) {
     double median_x = getMedian(cluster, 0);
     double median_y = getMedian(cluster, 1);
 
+    // Weighted combination for robust position estimation
     constexpr double w_median = 0.7;
     constexpr double w_min_x = 0.3;
     constexpr double w_min_y = 0.3;
@@ -618,11 +693,33 @@ double ClusterProcessor::getMedian(const Cluster& points, size_t idx) const {
     return median;
 }
 
+bool ClusterProcessor::isOrangeConeCandidate(const Cluster& cluster) const {
+    if (cluster.size() < lidar_constants::ORANGE_CONE_MIN_POINTS) {
+        return false;
+    }
+
+    // Calculate centroid distance
+    double sum_x = 0.0, sum_y = 0.0;
+    for (const auto& point : cluster) {
+        sum_x += point[0];
+        sum_y += point[1];
+    }
+    double centroid_x = sum_x / cluster.size();
+    double centroid_y = sum_y / cluster.size();
+    double distance = std::sqrt(centroid_x * centroid_x + centroid_y * centroid_y);
+
+    return (distance > lidar_constants::ORANGE_CONE_DISTANCE_THRESHOLD);
+}
+
 // =============================================
 // POINT CLOUD EXTRACTOR IMPLEMENTATION
 // =============================================
 
 std::vector<Point4D> PointCloudExtractor::fromPointCloud(const sensor_msgs::msg::PointCloud::SharedPtr cloud_msg) {
+    if (!validatePointCloud(cloud_msg)) {
+        return {};
+    }
+
     std::vector<Point4D> points;
     points.reserve(cloud_msg->points.size());
 
@@ -638,6 +735,10 @@ std::vector<Point4D> PointCloudExtractor::fromPointCloud(const sensor_msgs::msg:
 }
 
 std::vector<Point4D> PointCloudExtractor::fromPointCloud2(const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg) {
+    if (!validatePointCloud2(cloud_msg)) {
+        return {};
+    }
+
     std::vector<Point4D> points;
     points.reserve(cloud_msg->width * cloud_msg->height);
 
@@ -648,7 +749,7 @@ std::vector<Point4D> PointCloudExtractor::fromPointCloud2(const sensor_msgs::msg
     bool has_intensity = false;
     std::optional<sensor_msgs::PointCloud2ConstIterator<float>> iter_intensity;
     
-    // Check if intensity field exists and create iterator
+    // Check for intensity field with redundancy
     for (const auto& field : cloud_msg->fields) {
         if (field.name == "intensity" || field.name == "intensities") {
             has_intensity = true;
@@ -667,10 +768,34 @@ std::vector<Point4D> PointCloudExtractor::fromPointCloud2(const sensor_msgs::msg
     }
 
     RCLCPP_INFO(rclcpp::get_logger("point_cloud_extractor"), 
-                "Extracted %zu points from PointCloud2 (has_intensity: %d)", 
-                points.size(), has_intensity);
+               "Extracted %zu points from PointCloud2 (has_intensity: %d)", 
+               points.size(), has_intensity);
 
     return points;
+}
+
+bool PointCloudExtractor::validatePointCloud(const sensor_msgs::msg::PointCloud::SharedPtr cloud_msg) {
+    if (!cloud_msg) {
+        RCLCPP_ERROR(rclcpp::get_logger("point_cloud_extractor"), "Null PointCloud message");
+        return false;
+    }
+    if (cloud_msg->points.empty()) {
+        RCLCPP_WARN(rclcpp::get_logger("point_cloud_extractor"), "Empty PointCloud message");
+        return false;
+    }
+    return true;
+}
+
+bool PointCloudExtractor::validatePointCloud2(const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg) {
+    if (!cloud_msg) {
+        RCLCPP_ERROR(rclcpp::get_logger("point_cloud_extractor"), "Null PointCloud2 message");
+        return false;
+    }
+    if (cloud_msg->width * cloud_msg->height == 0) {
+        RCLCPP_WARN(rclcpp::get_logger("point_cloud_extractor"), "Empty PointCloud2 message");
+        return false;
+    }
+    return true;
 }
 
 // =============================================
@@ -681,35 +806,37 @@ ProcessLidar::ProcessLidar() :
     Node("process_lidar"), 
     env_(ORT_LOGGING_LEVEL_WARNING, "ONNX_INFERENCE") {
     
-    // Enable debug logging to see all messages
+    // Enable comprehensive logging
     auto debug_logger = this->get_logger();
     auto result = rcutils_logging_set_logger_level(debug_logger.get_name(), RCUTILS_LOG_SEVERITY_DEBUG);
-    (void)result; // Explicitly ignore the result
-    
+    (void)result;
+
+    // Initialize modular components
     initializeComponents();
     
-    // Subscribers
+    // Dual input subscribers for redundancy
     lidar_raw_input_sub_ = create_subscription<sensor_msgs::msg::PointCloud>(
         lidar_constants::LIDAR_RAW_TOPIC, rclcpp::SensorDataQoS(),
         [this](const sensor_msgs::msg::PointCloud::SharedPtr msg) {
-            RCLCPP_DEBUG(this->get_logger(), "Received PointCloud message with %zu points", msg->points.size());
+            RCLCPP_DEBUG(this->get_logger(), "Received PointCloud with %zu points", msg->points.size());
             lidarRawCallback(msg);
         });
 
     lidar_raw_input_sub2_ = create_subscription<sensor_msgs::msg::PointCloud2>(
         lidar_constants::LIDAR_RAW_TOPIC2, rclcpp::SensorDataQoS(),
         [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-            RCLCPP_DEBUG(this->get_logger(), "Received PointCloud2 message with %dx%d points", msg->width, msg->height);
+            RCLCPP_DEBUG(this->get_logger(), "Received PointCloud2 with %dx%d points", msg->width, msg->height);
             lidarRawCallback2(msg);
         });
 
-    // Publishers
+    // Output publishers
     detected_cones_pub_ = create_publisher<dv_msgs::msg::IndexedTrack>("/perception/cones", 10);
     filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
 
-    RCLCPP_INFO(get_logger(), "Optimized LiDAR Node with Hybrid ML/Heuristic classification started");
-    RCLCPP_INFO(get_logger(), "Subscribed to both PointCloud (%s) and PointCloud2 (%s) topics", 
+    RCLCPP_INFO(get_logger(), "=== MODULAR LIDAR PROCESSING NODE STARTED ===");
+    RCLCPP_INFO(get_logger(), "Dual input topics: %s, %s", 
                 lidar_constants::LIDAR_RAW_TOPIC, lidar_constants::LIDAR_RAW_TOPIC2);
+    RCLCPP_INFO(get_logger(), "Output topic: /perception/cones");
 }
 
 ProcessLidar::~ProcessLidar() {
@@ -771,12 +898,25 @@ ProcessLidar::~ProcessLidar() {
 }
 
 void ProcessLidar::initializeComponents() {
-    ml_classifier_ = std::make_unique<ConeClassifier>(env_);
-    heuristic_classifier_ = std::make_unique<HeuristicClassifier>();
-    point_cloud_processor_ = std::make_unique<PointCloudProcessor>();
-    cluster_processor_ = std::make_unique<ClusterProcessor>();
-    
-    loadONNXModel();
+    try {
+        ml_classifier_ = std::make_unique<ConeClassifier>(env_);
+        heuristic_classifier_ = std::make_unique<HeuristicClassifier>();
+        point_cloud_processor_ = std::make_unique<PointCloudProcessor>();
+        cluster_processor_ = std::make_unique<ClusterProcessor>();
+        
+        loadONNXModel();
+        
+        if (validateComponents()) {
+            RCLCPP_INFO(get_logger(), "All modular components initialized successfully");
+        } else {
+            RCLCPP_FATAL(get_logger(), "Component validation failed");
+            rclcpp::shutdown();
+        }
+    }
+    catch (const std::exception& e) {
+        RCLCPP_FATAL(get_logger(), "Component initialization failed: %s", e.what());
+        rclcpp::shutdown();
+    }
 }
 
 void ProcessLidar::loadONNXModel() {
@@ -790,110 +930,141 @@ void ProcessLidar::loadONNXModel() {
     
     std::string model_path = package_share_directory + "/cone_model.onnx";
     
-    // Check if model file exists
-    if (!std::filesystem::exists(model_path)) {
-        RCLCPP_ERROR(get_logger(), "ONNX model file not found at: %s", model_path.c_str());
-        RCLCPP_ERROR(get_logger(), "Current working directory: %s", std::filesystem::current_path().c_str());
-        
-        // Try to find the model file
-        std::vector<std::string> possible_paths = {
-            package_share_directory + "/share/perception_winter/cone_model.onnx",
-            package_share_directory + "/cone_model.onnx", 
-            "./cone_model.onnx",
-            "/home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx"
-        };
-        
-        for (const auto& path : possible_paths) {
-            if (std::filesystem::exists(path)) {
-                model_path = path;
-                RCLCPP_INFO(get_logger(), "Found model at: %s", path.c_str());
-                break;
-            }
+    // Comprehensive model path search with redundancy
+    std::vector<std::string> possible_paths = {
+        model_path,
+        package_share_directory + "/share/perception_winter/cone_model.onnx",
+        package_share_directory + "/cone_model.onnx", 
+        "./cone_model.onnx",
+        "/home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx"
+    };
+    
+    bool model_found = false;
+    for (const auto& path : possible_paths) {
+        if (std::filesystem::exists(path)) {
+            model_path = path;
+            model_found = true;
+            RCLCPP_INFO(get_logger(), "Found model at: %s", path.c_str());
+            break;
         }
     }
     
-    if (ml_classifier_) {
-        if (ml_classifier_->initialize(model_path)) {
-            RCLCPP_INFO(get_logger(), "Successfully loaded ONNX model from: %s", model_path.c_str());
-        } else {
-            RCLCPP_ERROR(get_logger(), "Failed to initialize ONNX model from: %s", model_path.c_str());
-        }
+    if (!model_found) {
+        RCLCPP_ERROR(get_logger(), "ONNX model file not found in any search path");
+        return;
+    }
+    
+    if (ml_classifier_ && ml_classifier_->initialize(model_path)) {
+        RCLCPP_INFO(get_logger(), "ONNX model loaded successfully: %s", model_path.c_str());
     } else {
-        RCLCPP_FATAL(get_logger(), "Failed to initialize ML classifier");
-        rclcpp::shutdown();
+        RCLCPP_ERROR(get_logger(), "Failed to initialize ONNX model: %s", model_path.c_str());
     }
 }
 
+bool ProcessLidar::validateComponents() const {
+    bool all_valid = true;
+    
+    if (!ml_classifier_) {
+        RCLCPP_ERROR(get_logger(), "ML Classifier component missing");
+        all_valid = false;
+    }
+    if (!heuristic_classifier_) {
+        RCLCPP_ERROR(get_logger(), "Heuristic Classifier component missing");
+        all_valid = false;
+    }
+    if (!point_cloud_processor_) {
+        RCLCPP_ERROR(get_logger(), "Point Cloud Processor component missing");
+        all_valid = false;
+    }
+    if (!cluster_processor_) {
+        RCLCPP_ERROR(get_logger(), "Cluster Processor component missing");
+        all_valid = false;
+    }
+    
+    return all_valid;
+}
+
 void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std_msgs::msg::Header& header) {
-    (void)header;
+    (void)header; // Currently unused
     
     if (points.empty()) {
-        RCLCPP_WARN(get_logger(), "No points in input cloud");
+        RCLCPP_WARN(get_logger(), "Empty point cloud data received");
         return;
     }
 
-    RCLCPP_INFO(get_logger(), "=== STARTING LIDAR PROCESSING PIPELINE ===");
-    RCLCPP_INFO(get_logger(), "Processing point cloud with %zu points", points.size());
-
-    auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-    auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-
+    total_processed_frames_++;
+    
     auto pipeline_start = std::chrono::steady_clock::now();
-    
-    // Stage 1: Filtering
-    RCLCPP_INFO(get_logger(), "--- STAGE 1: ROI and Car Body Filtering ---");
-    if (!point_cloud_processor_->filterCarBodyAndROI(points, cloud)) {
-        RCLCPP_WARN(get_logger(), "No points after car body and ROI filtering");
-        return;
-    }
-
-    // Stage 2: Ground removal
-    RCLCPP_INFO(get_logger(), "--- STAGE 2: Ground Removal ---");
-    if (!point_cloud_processor_->removeGroundPlane(cloud, cloud_filtered)) {
-        RCLCPP_WARN(get_logger(), "No points after ground removal");
-        return;
-    }
-
-    // Stage 3: Clustering
-    RCLCPP_INFO(get_logger(), "--- STAGE 3: Clustering ---");
-    auto clusters = cluster_processor_->clusterPoints(cloud_filtered);
-    if (clusters.empty()) {
-        RCLCPP_WARN(get_logger(), "No clusters found");
-        publishConeClusterPoints(clusters);
-        return;
-    }
-
-    // Stage 4: Cluster filtering with orange cone candidate detection
-    RCLCPP_INFO(get_logger(), "--- STAGE 4: Cluster Filtering with Orange Detection ---");
-    std::vector<bool> orange_candidates;
-    auto filtered_clusters = cluster_processor_->filterClustersBySize(clusters, orange_candidates);
-
-    // Stage 5: Cone detection with hybrid ML+Heuristic classification
-    RCLCPP_INFO(get_logger(), "--- STAGE 5: Hybrid ML+Heuristic Classification ---");
-    std::vector<Point3D> cone_positions;
-    std::vector<int> cone_colors;
-    
-    if (!filtered_clusters.empty()) {
-        cluster_processor_->detectConesInClusters(filtered_clusters, orange_candidates, 
-                                                 cone_positions, cone_colors,
-                                                 *ml_classifier_, *heuristic_classifier_);
-
-        // Stage 6: Publish results
-        RCLCPP_INFO(get_logger(), "--- STAGE 6: Publishing Results ---");
-        publishDetectedCones(cone_positions, cone_colors);
-    } else {
-        RCLCPP_WARN(get_logger(), "No valid clusters after size filtering");
-        publishDetectedCones({}, {});
-    }
-    
-    // Publish clustered points for visualization
-    RCLCPP_INFO(get_logger(), "--- PUBLISHING CLUSTERED POINTS FOR VISUALIZATION ---");
-    publishConeClusterPoints(clusters);
-
+    bool success = executeProcessingPipeline(points);
     auto pipeline_end = std::chrono::steady_clock::now();
+    
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(pipeline_end - pipeline_start);
-    RCLCPP_INFO(get_logger(), "=== PROCESSING COMPLETED in %ld ms ===", duration.count());
-    RCLCPP_INFO(get_logger(), "Detected %zu clusters total", clusters.size());
+    
+    if (success) {
+        publishProcessingMetrics(duration);
+    } else {
+        failed_processing_attempts_++;
+        RCLCPP_WARN(get_logger(), "Processing pipeline failed for frame %lld", total_processed_frames_.load());
+    }
+}
+
+bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points) {
+    try {
+        RCLCPP_INFO(get_logger(), "=== STARTING PROCESSING PIPELINE ===");
+        RCLCPP_INFO(get_logger(), "Input points: %zu", points.size());
+
+        // Stage 1: Point Cloud Filtering
+        auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        if (!point_cloud_processor_->filterCarBodyAndROI(points, cloud, get_logger())) {
+            RCLCPP_WARN(get_logger(), "Stage 1 failed: No points after filtering");
+            return false;
+        }
+
+        // Stage 2: Ground Removal
+        auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        if (!point_cloud_processor_->removeGroundPlane(cloud, cloud_filtered, get_logger())) {
+            RCLCPP_WARN(get_logger(), "Stage 2 failed: No points after ground removal");
+            return false;
+        }
+
+        // Stage 3: Clustering
+        auto clusters = cluster_processor_->clusterPoints(cloud_filtered, get_logger());
+        if (clusters.empty()) {
+            RCLCPP_WARN(get_logger(), "Stage 3 failed: No clusters found");
+            publishConeClusterPoints(clusters);
+            return true; // No clusters is not necessarily a failure
+        }
+
+        // Stage 4: Cluster Filtering
+        std::vector<bool> orange_candidates;
+        auto filtered_clusters = cluster_processor_->filterClustersBySize(clusters, orange_candidates, get_logger());
+
+        // Stage 5: Cone Detection
+        std::vector<Point3D> cone_positions;
+        std::vector<int> cone_colors;
+        
+        if (!filtered_clusters.empty()) {
+            cluster_processor_->detectConesInClusters(filtered_clusters, orange_candidates, 
+                                                     cone_positions, cone_colors,
+                                                     *ml_classifier_, *heuristic_classifier_, get_logger());
+
+            // Stage 6: Publish Results
+            publishDetectedCones(cone_positions, cone_colors);
+        } else {
+            RCLCPP_WARN(get_logger(), "Stage 5: No valid clusters after filtering");
+            publishDetectedCones({}, {});
+        }
+        
+        // Always publish clustered points for visualization
+        publishConeClusterPoints(clusters);
+
+        RCLCPP_INFO(get_logger(), "=== PROCESSING PIPELINE COMPLETED SUCCESSFULLY ===");
+        return true;
+    }
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(get_logger(), "Processing pipeline exception: %s", e.what());
+        return false;
+    }
 }
 
 void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors) {
@@ -904,26 +1075,25 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
     int orange_count = 0;
 
     for (size_t i = 0; i < positions.size(); ++i) {
-        dv_msgs::msg::IndexedCone cone_msg;
         double x = positions[i][0];
         double y = positions[i][1];
         double z = positions[i][2];
 
+        // Distance and angle validation
         if (x < 3.35 || x > 12) continue;
         
         double range = sqrt(x * x + y * y);
         double angle = atan2(y, x);
         
+        dv_msgs::msg::IndexedCone cone_msg;
         cone_msg.location.x = range;
         cone_msg.location.y = angle;
         cone_msg.location.z = z;
-        
-        // Convert internal color to message format
         cone_msg.color = colors[i];
         cone_msg.index = i;
         track_msg.track.push_back(cone_msg);
 
-        // Count by color
+        // Color counting for diagnostics
         if (colors[i] == dv_msgs::msg::IndexedCone::YELLOW) {
             yellow_count++;
         } else if (colors[i] == dv_msgs::msg::IndexedCone::BLUE) {
@@ -935,10 +1105,11 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
     
     if (!track_msg.track.empty()) {
         detected_cones_pub_->publish(track_msg);
-        RCLCPP_INFO(get_logger(), "Published %zu cones to /perception/cones", track_msg.track.size());
+        RCLCPP_DEBUG(get_logger(), "Published %zu cones to /perception/cones", track_msg.track.size());
     }
 
-    RCLCPP_INFO(get_logger(), "Detected cones - Yellow: %d, Blue: %d, Orange: %d", yellow_count, blue_count, orange_count);
+    RCLCPP_INFO(get_logger(), "Detected cones - Yellow: %d, Blue: %d, Orange: %d", 
+                yellow_count, blue_count, orange_count);
 }
 
 void ProcessLidar::publishConeClusterPoints(const std::vector<Cluster>& cone_clusters) {
@@ -949,7 +1120,7 @@ void ProcessLidar::publishConeClusterPoints(const std::vector<Cluster>& cone_clu
 
     auto message = std_msgs::msg::Float32MultiArray();
     
-    // Publish ALL points from ALL clusters (before filtering)
+    // Publish all cluster points for visualization
     size_t total_points = 0;
     for (const auto& cluster : cone_clusters) {
         total_points += cluster.size();
@@ -963,38 +1134,44 @@ void ProcessLidar::publishConeClusterPoints(const std::vector<Cluster>& cone_clu
     
     filtered_points_pub_->publish(message);
     
-    RCLCPP_INFO(get_logger(), "Published %zu clustered points (from %zu clusters) to /perception/filtered_points", 
+    RCLCPP_DEBUG(get_logger(), "Published %zu clustered points (from %zu clusters)", 
                  total_points, cone_clusters.size());
+}
+
+void ProcessLidar::publishProcessingMetrics(const std::chrono::milliseconds& duration) {
+    RCLCPP_INFO(get_logger(), "Frame processing time: %ld ms", duration.count());
 }
 
 void ProcessLidar::lidarRawCallback(const sensor_msgs::msg::PointCloud::SharedPtr msg) {
     auto start_time = std::chrono::steady_clock::now();
 
     try {
-        RCLCPP_INFO(get_logger(), "Processing PointCloud with %zu points", msg->points.size());
         auto points = PointCloudExtractor::fromPointCloud(msg);
         processPointCloudData(points, msg->header);
-    } catch (const std::exception& e) {
+    } 
+    catch (const std::exception& e) {
         RCLCPP_ERROR(get_logger(), "PointCloud processing error: %s", e.what());
+        failed_processing_attempts_++;
     }
     
     auto end_time = std::chrono::steady_clock::now();  
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    RCLCPP_DEBUG(get_logger(), "PointCloud processing completed in %ld ms", duration.count());
+    RCLCPP_DEBUG(get_logger(), "PointCloud callback completed in %ld ms", duration.count());
 }
 
 void ProcessLidar::lidarRawCallback2(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     auto start_time = std::chrono::steady_clock::now();
 
     try {
-        RCLCPP_INFO(get_logger(), "Processing PointCloud2 with %dx%d points", msg->width, msg->height);
         auto points = PointCloudExtractor::fromPointCloud2(msg);
         processPointCloudData(points, msg->header);
-    } catch (const std::exception& e) {
+    } 
+    catch (const std::exception& e) {
         RCLCPP_ERROR(get_logger(), "PointCloud2 processing error: %s", e.what());
+        failed_processing_attempts_++;
     }
     
     auto end_time = std::chrono::steady_clock::now();  
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    RCLCPP_DEBUG(get_logger(), "PointCloud2 processing completed in %ld ms", duration.count());
+    RCLCPP_DEBUG(get_logger(), "PointCloud2 callback completed in %ld ms", duration.count());
 }
