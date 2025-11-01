@@ -4,6 +4,7 @@
         "string": "cpp",
         "vector": "cpp",
         "optional": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "atomic": "cpp"
     }
 }

@@ -39,7 +39,7 @@ namespace perception_winter {
 namespace lidar_constants {
     // Topic Configuration
     constexpr auto LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
-    constexpr auto LIDAR_RAW_TOPIC2 = "/carmaker/pointcloud2";
+    constexpr auto LIDAR_RAW_TOPIC2 = "/velodyne_points";
 
     // Ground Removal Parameters (Optimized for RANSAC)
     constexpr double RANSAC_THRESHOLD = 0.015;
@@ -79,7 +79,7 @@ namespace lidar_constants {
     // Cluster Filtering Parameters (Optimized from second code)
     constexpr double MIN_CLUSTER_HEIGHT = 0.15;
     constexpr double MAX_CLUSTER_HEIGHT = 0.60;
-    constexpr double MAX_CLUSTER_WIDTH = 0.45;
+    constexpr double MAX_CLUSTER_WIDTH = 0.75;
     constexpr int MIN_CLUSTER_POINTS = 4;
 
     // Orange Cone Detection

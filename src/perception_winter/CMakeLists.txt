@@ -48,6 +48,12 @@ add_executable(cone_visualizer_node
   src/main_1.cpp
 )
 
+add_executable(filtered_points_node
+  src/filtered_points_visual_node.cpp
+  src/filtered_points_visual_main.cpp
+)
+
+# --- Process Lidar Node ---
 ament_target_dependencies(process_lidar_node 
   rclcpp sensor_msgs visualization_msgs std_msgs pcl_conversions dv_msgs
 )
@@ -67,6 +73,7 @@ target_link_libraries(process_lidar_node
   ${ONNXRUNTIME_LIB}
 )
 
+# --- Cone Visualizer Node ---
 ament_target_dependencies(cone_visualizer_node 
   rclcpp visualization_msgs dv_msgs
 )
@@ -78,18 +85,30 @@ target_link_libraries(cone_visualizer_node
   ${ament_cmake_libraries}
 )
 
+ament_target_dependencies(filtered_points_node 
+  rclcpp std_msgs visualization_msgs
+)
+target_include_directories(filtered_points_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(filtered_points_node
+  ${ament_cmake_libraries}
+)
+
+# --- Installation ---
 install(TARGETS
   process_lidar_node
   cone_visualizer_node
+  filtered_points_node  
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY include/ DESTINATION include)
-# install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
 
 set(MODEL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cone_model.onnx")
 if(EXISTS ${MODEL_FILE})
   install(FILES ${MODEL_FILE} DESTINATION share/${PROJECT_NAME})
 endif()
 
-ament_package() 
+ament_package()

@@ -223,6 +223,19 @@ cone_visualizer_node/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/cone_visualizer_node.dir/build.make CMakeFiles/cone_visualizer_node.dir/build
 .PHONY : cone_visualizer_node/fast
 
+#=============================================================================
+# Target rules for targets named filtered_points_node
+
+# Build rule for target.
+filtered_points_node: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 filtered_points_node
+.PHONY : filtered_points_node
+
+# fast build rule for target.
+filtered_points_node/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/build
+.PHONY : filtered_points_node/fast
+
 src/cone_seen_visual_node.o: src/cone_seen_visual_node.cpp.o
 .PHONY : src/cone_seen_visual_node.o
 
@@ -246,6 +259,54 @@ src/cone_seen_visual_node.s: src/cone_seen_visual_node.cpp.s
 src/cone_seen_visual_node.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/cone_visualizer_node.dir/build.make CMakeFiles/cone_visualizer_node.dir/src/cone_seen_visual_node.cpp.s
 .PHONY : src/cone_seen_visual_node.cpp.s
+
+src/filtered_points_visual_main.o: src/filtered_points_visual_main.cpp.o
+.PHONY : src/filtered_points_visual_main.o
+
+# target to build an object file
+src/filtered_points_visual_main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_main.cpp.o
+.PHONY : src/filtered_points_visual_main.cpp.o
+
+src/filtered_points_visual_main.i: src/filtered_points_visual_main.cpp.i
+.PHONY : src/filtered_points_visual_main.i
+
+# target to preprocess a source file
+src/filtered_points_visual_main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_main.cpp.i
+.PHONY : src/filtered_points_visual_main.cpp.i
+
+src/filtered_points_visual_main.s: src/filtered_points_visual_main.cpp.s
+.PHONY : src/filtered_points_visual_main.s
+
+# target to generate assembly for a file
+src/filtered_points_visual_main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_main.cpp.s
+.PHONY : src/filtered_points_visual_main.cpp.s
+
+src/filtered_points_visual_node.o: src/filtered_points_visual_node.cpp.o
+.PHONY : src/filtered_points_visual_node.o
+
+# target to build an object file
+src/filtered_points_visual_node.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.o
+.PHONY : src/filtered_points_visual_node.cpp.o
+
+src/filtered_points_visual_node.i: src/filtered_points_visual_node.cpp.i
+.PHONY : src/filtered_points_visual_node.i
+
+# target to preprocess a source file
+src/filtered_points_visual_node.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.i
+.PHONY : src/filtered_points_visual_node.cpp.i
+
+src/filtered_points_visual_node.s: src/filtered_points_visual_node.cpp.s
+.PHONY : src/filtered_points_visual_node.s
+
+# target to generate assembly for a file
+src/filtered_points_visual_node.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.s
+.PHONY : src/filtered_points_visual_node.cpp.s
 
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
@@ -335,10 +396,17 @@ help:
 	@echo "... perception_winter_uninstall"
 	@echo "... uninstall"
 	@echo "... cone_visualizer_node"
+	@echo "... filtered_points_node"
 	@echo "... process_lidar_node"
 	@echo "... src/cone_seen_visual_node.o"
 	@echo "... src/cone_seen_visual_node.i"
 	@echo "... src/cone_seen_visual_node.s"
+	@echo "... src/filtered_points_visual_main.o"
+	@echo "... src/filtered_points_visual_main.i"
+	@echo "... src/filtered_points_visual_main.s"
+	@echo "... src/filtered_points_visual_node.o"
+	@echo "... src/filtered_points_visual_node.i"
+	@echo "... src/filtered_points_visual_node.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

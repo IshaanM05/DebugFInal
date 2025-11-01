@@ -36,25 +36,25 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 81,
+				"line" : 100,
 				"parent" : 0
 			},
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 87,
+				"line" : 107,
 				"parent" : 0
 			},
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 92,
+				"line" : 111,
 				"parent" : 0
 			},
 			{
 				"command" : 5,
 				"file" : 0,
-				"line" : 95,
+				"line" : 114,
 				"parent" : 0
 			},
 			{
@@ -244,7 +244,7 @@
 				"process_lidar_node"
 			],
 			"targetId" : "process_lidar_node::@6890427a1f51a3e7e1df",
-			"targetIndex" : 2,
+			"targetIndex" : 3,
 			"type" : "target"
 		},
 		{
@@ -253,7 +253,7 @@
 			"cxxModuleBmiTarget" : 
 			{
 				"id" : "process_lidar_node::@6890427a1f51a3e7e1df",
-				"index" : 2
+				"index" : 3
 			},
 			"destination" : "lib/perception_winter",
 			"type" : "cxxModuleBmi"
@@ -277,6 +277,29 @@
 			{
 				"id" : "cone_visualizer_node::@6890427a1f51a3e7e1df",
 				"index" : 0
+			},
+			"destination" : "lib/perception_winter",
+			"type" : "cxxModuleBmi"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "lib/perception_winter",
+			"paths" : 
+			[
+				"filtered_points_node"
+			],
+			"targetId" : "filtered_points_node::@6890427a1f51a3e7e1df",
+			"targetIndex" : 1,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"cxxModuleBmiTarget" : 
+			{
+				"id" : "filtered_points_node::@6890427a1f51a3e7e1df",
+				"index" : 1
 			},
 			"destination" : "lib/perception_winter",
 			"type" : "cxxModuleBmi"

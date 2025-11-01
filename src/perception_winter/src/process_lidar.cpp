@@ -514,19 +514,19 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
         double centroid_y = sum_y / cluster.size();
 
         // Check for orange cone candidate during filtering
-        bool is_orange_candidate = false;
+        bool is_orange_candidate = isOrangeConeCandidate(cluster);
         orange_candidates.push_back(is_orange_candidate);
 
         // Regular cone filtering
-        bool valid_height = (height >= 0.15 && height <= 0.5);
-        bool valid_width = (width <= 0.75);
-        bool valid_x_pos = (centroid_x <= lidar_constants::ROI_X_MAX); // Using the constant
+        bool valid_height = (height >= lidar_constants::MIN_CLUSTER_HEIGHT && height <= lidar_constants::MAX_CLUSTER_HEIGHT);
+        bool valid_width = (width <= lidar_constants::MAX_CLUSTER_WIDTH);
+        bool valid_x_pos = (centroid_x <= lidar_constants::ROI_X_MAX);
 
         if (!valid_height) rejected_by_height++;
         if (!valid_width) rejected_by_width++;
-        if (!valid_x_pos) rejected_by_x_dist++; // Increment the new counter
+        if (!valid_x_pos) rejected_by_x_dist++;
 
-        if (valid_height && valid_width && valid_x_pos) { // Added the new condition
+        if (valid_height && valid_width && valid_x_pos) {
             valid_clusters.push_back(cluster);
             total_points_after += cluster.size();
         }
@@ -534,7 +534,7 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
 
     RCLCPP_INFO(rclcpp::get_logger("cluster_processor"),
                 "Cluster filtering: %zu -> %zu clusters, points: %d -> %d "
-                "(rejected: points=%d, height=%d, width=%d, x_dist=%d)", // Updated log
+                "(rejected: points=%d, height=%d, width=%d, x_dist=%d)",
                 clusters.size(), valid_clusters.size(), total_points_before, total_points_after,
                 rejected_by_points, rejected_by_height, rejected_by_width, rejected_by_x_dist);
 
@@ -551,11 +551,11 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
     positions.reserve(clusters.size());
     colors.reserve(clusters.size());
 
+    int accepted_cones = 0;
     int orange_cones = 0;
 
     for (size_t i = 0; i < clusters.size(); ++i) {
         const auto& cluster = clusters[i];
-        if (cluster.empty()) continue;
         if (cluster.empty()) continue;
 
         // --- 1. Handle Orange Cones (Assumed correct, not part of Blue/Yellow metrics) ---
@@ -563,7 +563,7 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
             auto cone_pos = calculateConePosition(cluster);
             positions.push_back(cone_pos);
             colors.push_back(dv_msgs::msg::IndexedCone::ORANGE_BIG);
-            colors.push_back(dv_msgs::msg::IndexedCone::ORANGE_BIG);
+            accepted_cones++;
             orange_cones++;
             continue;
         }
@@ -592,6 +592,7 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
                 auto cone_pos = calculateConePosition(cluster);
                 positions.push_back(cone_pos);
                 colors.push_back(final_color);
+                accepted_cones++;
                 
                 // Update True/False Positive counters
                 if (final_color == dv_msgs::msg::IndexedCone::BLUE) {
@@ -613,9 +614,8 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
     }
 
     // Update the log to show the count of accepted cones only
-    long long accepted_cones = g_true_positives_blue + g_false_positives_yellow + g_true_positives_yellow + g_false_positives_blue;
     RCLCPP_INFO(rclcpp::get_logger("cluster_processor"), 
-                "Cone detection: Accepted cones (ML+Heuristic agreement): %lld, Orange cones: %d",
+                "Cone detection: Accepted cones (ML+Heuristic agreement): %d, Orange cones: %d",
                 accepted_cones, orange_cones);
 }
 
@@ -640,11 +640,11 @@ void ClusterProcessor::printClusterStats(const std::vector<Cluster>& clusters, r
             min_y = std::min(min_y, point[1]);
             max_y = std::max(max_y, point[1]);
         }
+        avg_intensity /= cluster.size();
+        
+        RCLCPP_INFO(logger, "  Cluster %zu: %zu points, height: %.3fm, intensity: %.3f", 
+                   i, cluster.size(), max_z - min_z, avg_intensity);
     }
-
-    RCLCPP_INFO(logger, 
-               "Cone detection: Accepted cones (ML+Heuristic agreement): %d, Orange cones: %d",
-               accepted_cones, orange_cones);
 }
 
 Point3D ClusterProcessor::calculateConePosition(const Cluster& cluster) {
@@ -837,6 +837,7 @@ ProcessLidar::ProcessLidar() :
     RCLCPP_INFO(get_logger(), "Dual input topics: %s, %s", 
                 lidar_constants::LIDAR_RAW_TOPIC, lidar_constants::LIDAR_RAW_TOPIC2);
     RCLCPP_INFO(get_logger(), "Output topic: /perception/cones");
+    RCLCPP_INFO(get_logger(), "Filtered points visualization topic: /perception/filtered_points");
 }
 
 ProcessLidar::~ProcessLidar() {
@@ -1056,6 +1057,7 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
         }
         
         // Always publish clustered points for visualization
+        // This is crucial for the FilteredPointsVisualNode to work
         publishConeClusterPoints(clusters);
 
         RCLCPP_INFO(get_logger(), "=== PROCESSING PIPELINE COMPLETED SUCCESSFULLY ===");
@@ -1121,6 +1123,7 @@ void ProcessLidar::publishConeClusterPoints(const std::vector<Cluster>& cone_clu
     auto message = std_msgs::msg::Float32MultiArray();
     
     // Publish all cluster points for visualization
+    // Format: [x1, y1, z1, x2, y2, z2, ...] for compatibility with FilteredPointsVisualNode
     size_t total_points = 0;
     for (const auto& cluster : cone_clusters) {
         total_points += cluster.size();
@@ -1128,13 +1131,13 @@ void ProcessLidar::publishConeClusterPoints(const std::vector<Cluster>& cone_clu
             message.data.push_back(static_cast<float>(point[0])); // x
             message.data.push_back(static_cast<float>(point[1])); // y  
             message.data.push_back(static_cast<float>(point[2])); // z
-            message.data.push_back(static_cast<float>(point[3])); // intensity
+            // Note: We're not including intensity to match the visualizer's expectation of 3 floats per point
         }
     }
     
     filtered_points_pub_->publish(message);
     
-    RCLCPP_DEBUG(get_logger(), "Published %zu clustered points (from %zu clusters)", 
+    RCLCPP_DEBUG(get_logger(), "Published %zu clustered points (from %zu clusters) for visualization", 
                  total_points, cone_clusters.size());
 }
 
