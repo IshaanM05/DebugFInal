@@ -1,7 +1,9 @@
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/filtered_points_node
+/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/lidar_clusters_visualizer_node
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/process_lidar.hpp
+/home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/lidar_clusters_visualizer.hpp
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/filtered_points_visual_node.hpp
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx

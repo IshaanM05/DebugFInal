@@ -252,6 +252,9 @@ public:
 
     void printClusterStats(const std::vector<Cluster>& clusters, rclcpp::Logger logger) const;
 
+    // New method to calculate cluster centers for visualization
+    std::vector<Point3D> calculateClusterCenters(const std::vector<Cluster>& clusters) const;
+
 private:
     Point3D calculateConePosition(const Cluster& cluster);
     double getMedian(const Cluster& points, size_t idx) const;
@@ -314,6 +317,7 @@ private:
     // Publication Methods
     void publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors);
     void publishConeClusterPoints(const std::vector<Cluster>& cone_clusters);
+    void publishClusterCenters(const std::vector<Cluster>& filtered_clusters);
     void publishProcessingMetrics(const std::chrono::milliseconds& duration);
 
     // Subscribers (Dual input for redundancy)
@@ -323,6 +327,7 @@ private:
     // Publishers
     rclcpp::Publisher<dv_msgs::msg::IndexedTrack>::SharedPtr detected_cones_pub_;
     rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr filtered_points_pub_;
+    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr cluster_centers_pub_; // New publisher for cluster centers
 
     // Modular Processing Components
     std::unique_ptr<ConeClassifier> ml_classifier_;
@@ -336,6 +341,10 @@ private:
     // Performance Monitoring
     std::atomic<long long> total_processed_frames_{0};
     std::atomic<long long> failed_processing_attempts_{0};
+
+    // Visualization control parameters
+    bool publish_cluster_centers_ = true; // Control flag for cluster centers visualization
+    bool publish_filtered_points_ = true; // Control flag for filtered points visualization
 };
 
 } // namespace perception_winter

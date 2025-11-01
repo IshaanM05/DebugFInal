@@ -1,0 +1,403 @@
+[0.000000] (-) TimerEvent: {}
+[0.000437] (perception_winter) JobQueued: {'identifier': 'perception_winter', 'dependencies': OrderedDict()}
+[0.000473] (perception_winter) JobStarted: {'identifier': 'perception_winter'}
+[0.005496] (perception_winter) JobProgress: {'identifier': 'perception_winter', 'progress': 'cmake'}
+[0.005787] (perception_winter) Command: {'cmd': ['/home/ishaan/.local/bin/cmake', '/home/ishaan/Desktop/DebugFInal/src/perception_winter', '-DCMAKE_INSTALL_PREFIX=/home/ishaan/Desktop/DebugFInal/install/perception_winter'], 'cwd': '/home/ishaan/Desktop/DebugFInal/build/perception_winter', 'env': OrderedDict([('SHELL', '/bin/bash'), ('ROS_VERSION', '2'), ('SESSION_MANAGER', 'local/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:@/tmp/.ICE-unix/3182,unix/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:/tmp/.ICE-unix/3182'), ('QT_ACCESSIBILITY', '1'), ('COLORTERM', 'truecolor'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('_CE_M', ''), ('ROS_PYTHON_VERSION', '3'), ('LANGUAGE', 'en_IN:en'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('TERMINATOR_UUID', 'urn:uuid:c60a28fa-da07-48d3-8990-57955c0ec3d5'), ('XMODIFIERS', '@im=ibus'), ('DESKTOP_SESSION', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('PWD', '/home/ishaan/Desktop/DebugFInal/build/perception_winter'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('LOGNAME', 'ishaan'), ('ament_index_environment_hooks', '/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/opt/ros/humble/share/gazebo_ros2_control'), ('XDG_SESSION_TYPE', 'wayland'), ('ROS_DOMAIN_ID', '50'), ('SYSTEMD_EXEC_PID', '3217'), ('XAUTHORITY', '/run/user/1000/.mutter-Xwaylandauth.M51DF3'), ('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('HOME', '/home/ishaan'), ('USERNAME', 'ishaan'), ('IM_CONFIG_PHASE', '1'), ('LANG', 'en_US.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('VTE_VERSION', '6800'), ('WAYLAND_DISPLAY', 'wayland-0'), ('AMENT_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/opt/ros/humble'), ('CMAKE_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble'), ('COLCON_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install:/home/ishaan/IITBDV-msgs/install:/home/ishaan/eufs_ws/install'), ('INVOCATION_ID', 'b1c3f0c4724e44f2975eed69c13b8131'), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator25ef4b219e3b005583550f2b0f9f990c3'), ('MANAGERPID', '3020'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('GNOME_SETUP_DISPLAY', ':1'), ('_CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('XDG_SESSION_CLASS', 'user'), ('_CONDA_ROOT', '/home/ishaan/miniconda3'), ('IBUS_DISABLE_SNOOPER', '1'), ('PYTHONPATH', '/home/ishaan/eufs_ws/install/eufs_launcher/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_tracks/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_rqt/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_racecar/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_msgs/local/lib/python3.10/dist-packages:/home/ishaan/IITBDV-msgs/install/dv_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('TERM', 'xterm-256color'), ('_CE_CONDA', ''), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'ishaan'), ('_colcon_cd_root', '/opt/ros/humble/'), ('CONDA_SHLVL', '0'), ('DISPLAY', ':0'), ('SHLVL', '1'), ('QT_IM_MODULE', 'ibus'), ('IPGHOME', '/opt/ipg'), ('CONDA_PYTHON_EXE', '/home/ishaan/miniconda3/bin/python'), ('LD_LIBRARY_PATH', '/usr/local/cuda-12.6/lib64:/home/ishaan/eufs_ws/install/eufs_plugins/lib:/home/ishaan/eufs_ws/install/eufs_models/lib:/home/ishaan/eufs_ws/install/eufs_msgs/lib:/home/ishaan/IITBDV-msgs/install/dv_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('ROS_LOCALHOST_ONLY', '0'), ('LC_ALL', 'en_US.UTF-8'), ('JOURNAL_STREAM', '8:77461'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('CARMAKER_VER', '13.0.1'), ('PATH', '/home/ishaan/miniconda3/condabin:/opt/ipg/carmaker/linux64-13.0.1/bin:/usr/local/cuda-12.6/bin:/opt/ros/humble/bin:/home/ishaan/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/home/ishaan/.local/bin'), ('GDMSESSION', 'ubuntu'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('ROS_DISTRO', 'humble'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '4089'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/terminator.desktop'), ('EUFS_MASTER', '/home/ishaan/eufs_ws'), ('OLDPWD', '/home/ishaan/Desktop'), ('_', '/usr/bin/env')]), 'shell': False}
+[0.055911] (perception_winter) StderrLine: {'line': b'\x1b[0mCMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):\n'}
+[0.056132] (perception_winter) StderrLine: {'line': b'  Compatibility with CMake < 3.10 will be removed from a future version of\n'}
+[0.056189] (perception_winter) StderrLine: {'line': b'  CMake.\n'}
+[0.056239] (perception_winter) StderrLine: {'line': b'\n'}
+[0.056283] (perception_winter) StderrLine: {'line': b'  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax\n'}
+[0.056326] (perception_winter) StderrLine: {'line': b'  to tell CMake that the project requires at least <min> but has been updated\n'}
+[0.056373] (perception_winter) StderrLine: {'line': b'  to work with policies introduced by <max> or earlier.\n'}
+[0.056416] (perception_winter) StderrLine: {'line': b'\n'}
+[0.056459] (perception_winter) StderrLine: {'line': b'\x1b[0m\n'}
+[0.100001] (-) TimerEvent: {}
+[0.104929] (perception_winter) StdoutLine: {'line': b'-- The C compiler identification is GNU 11.4.0\n'}
+[0.189652] (perception_winter) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 11.4.0\n'}
+[0.200144] (-) TimerEvent: {}
+[0.202571] (perception_winter) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.254855] (perception_winter) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.264187] (perception_winter) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.264335] (perception_winter) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.264534] (perception_winter) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.272459] (perception_winter) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.300285] (-) TimerEvent: {}
+[0.333570] (perception_winter) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.344463] (perception_winter) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.344650] (perception_winter) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.344944] (perception_winter) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.351290] (perception_winter) StdoutLine: {'line': b'-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)\n'}
+[0.400445] (-) TimerEvent: {}
+[0.450710] (perception_winter) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter\n'}
+[0.500541] (-) TimerEvent: {}
+[0.503967] (perception_winter) StdoutLine: {'line': b'-- Found rclcpp: 16.0.15 (/opt/ros/humble/share/rclcpp/cmake)\n'}
+[0.533829] (perception_winter) StdoutLine: {'line': b'-- Found rosidl_generator_c: 3.1.7 (/opt/ros/humble/share/rosidl_generator_c/cmake)\n'}
+[0.536952] (perception_winter) StdoutLine: {'line': b'-- Found rosidl_adapter: 3.1.7 (/opt/ros/humble/share/rosidl_adapter/cmake)\n'}
+[0.542839] (perception_winter) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 3.1.7 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)\n'}
+[0.551458] (perception_winter) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.563274] (perception_winter) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.596777] (perception_winter) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)\n'}
+[0.598764] (perception_winter) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 6.2.8 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)\n'}
+[0.600628] (-) TimerEvent: {}
+[0.681153] (perception_winter) StdoutLine: {'line': b'-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")\n'}
+[0.700813] (-) TimerEvent: {}
+[0.708902] (perception_winter) StdoutLine: {'line': b'-- Found FastRTPS: /opt/ros/humble/include\n'}
+[0.746438] (perception_winter) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[0.758128] (perception_winter) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD\n'}
+[0.800973] (-) TimerEvent: {}
+[0.825589] (perception_winter) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success\n'}
+[0.826904] (perception_winter) StdoutLine: {'line': b'-- Found Threads: TRUE\n'}
+[0.870674] (perception_winter) StdoutLine: {'line': b'-- Found sensor_msgs: 4.9.0 (/opt/ros/humble/share/sensor_msgs/cmake)\n'}
+[0.893032] (perception_winter) StdoutLine: {'line': b'-- Found visualization_msgs: 4.9.0 (/opt/ros/humble/share/visualization_msgs/cmake)\n'}
+[0.901181] (-) TimerEvent: {}
+[0.908120] (perception_winter) StdoutLine: {'line': b'-- Found pcl_conversions: 2.4.5 (/opt/ros/humble/share/pcl_conversions/cmake)\n'}
+[0.931883] (perception_winter) StderrLine: {'line': b'\x1b[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:146 (find_package):\n'}
+[0.932037] (perception_winter) StderrLine: {'line': b'  Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT\n'}
+[0.932095] (perception_winter) StderrLine: {'line': b'  variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the\n'}
+[0.932143] (perception_winter) StderrLine: {'line': b'  cmake_policy command to set the policy and suppress this warning.\n'}
+[0.932187] (perception_winter) StderrLine: {'line': b'\n'}
+[0.932231] (perception_winter) StderrLine: {'line': b'  CMake variable EIGEN_ROOT is set to:\n'}
+[0.932274] (perception_winter) StderrLine: {'line': b'\n'}
+[0.932317] (perception_winter) StderrLine: {'line': b'    /usr/include/eigen3\n'}
+[0.932360] (perception_winter) StderrLine: {'line': b'\n'}
+[0.932402] (perception_winter) StderrLine: {'line': b'  For compatibility, find_package is ignoring the variable, but code in a\n'}
+[0.932445] (perception_winter) StderrLine: {'line': b'  .cmake module might still use it.\n'}
+[0.932487] (perception_winter) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[0.932529] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:299 (find_eigen)\n'}
+[0.932571] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)\n'}
+[0.932613] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)\n'}
+[0.932655] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)\n'}
+[0.932709] (perception_winter) StderrLine: {'line': b'  CMakeLists.txt:17 (find_package)\n'}
+[0.932752] (perception_winter) StderrLine: {'line': b'This warning is for project developers.  Use -Wno-dev to suppress it.\n'}
+[0.932795] (perception_winter) StderrLine: {'line': b'\x1b[0m\n'}
+[0.935043] (perception_winter) StdoutLine: {'line': b"-- Checking for module 'eigen3'\n"}
+[0.945154] (perception_winter) StdoutLine: {'line': b'--   Found eigen3, version 3.4.0\n'}
+[0.983322] (perception_winter) StdoutLine: {'line': b'-- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1")\n'}
+[0.983542] (perception_winter) StdoutLine: {'line': b'-- Eigen found (include: /usr/include/eigen3, version: 3.4.0)\n'}
+[0.983819] (perception_winter) StderrLine: {'line': b'\x1b[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):\n'}
+[0.983988] (perception_winter) StderrLine: {'line': b'  Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake\n'}
+[0.984056] (perception_winter) StderrLine: {'line': b'  --help-policy CMP0167" for policy details.  Use the cmake_policy command to\n'}
+[0.984129] (perception_winter) StderrLine: {'line': b'  set the policy and suppress this warning.\n'}
+[0.984186] (perception_winter) StderrLine: {'line': b'\n'}
+[0.984237] (perception_winter) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[0.984287] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)\n'}
+[0.984336] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)\n'}
+[0.984387] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)\n'}
+[0.984437] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)\n'}
+[0.984498] (perception_winter) StderrLine: {'line': b'  CMakeLists.txt:17 (find_package)\n'}
+[0.984548] (perception_winter) StderrLine: {'line': b'This warning is for project developers.  Use -Wno-dev to suppress it.\n'}
+[0.984598] (perception_winter) StderrLine: {'line': b'\x1b[0m\n'}
+[1.001396] (-) TimerEvent: {}
+[1.012528] (perception_winter) StderrLine: {'line': b'\x1b[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/Modules/FindFLANN.cmake:44 (find_package):\n'}
+[1.012619] (perception_winter) StderrLine: {'line': b'  Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT\n'}
+[1.012643] (perception_winter) StderrLine: {'line': b'  variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the\n'}
+[1.012662] (perception_winter) StderrLine: {'line': b'  cmake_policy command to set the policy and suppress this warning.\n'}
+[1.012680] (perception_winter) StderrLine: {'line': b'\n'}
+[1.012698] (perception_winter) StderrLine: {'line': b'  CMake variable FLANN_ROOT is set to:\n'}
+[1.012716] (perception_winter) StderrLine: {'line': b'\n'}
+[1.012733] (perception_winter) StderrLine: {'line': b'    /usr\n'}
+[1.012750] (perception_winter) StderrLine: {'line': b'\n'}
+[1.012767] (perception_winter) StderrLine: {'line': b'  For compatibility, find_package is ignoring the variable, but code in a\n'}
+[1.012783] (perception_winter) StderrLine: {'line': b'  .cmake module might still use it.\n'}
+[1.012801] (perception_winter) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[1.012817] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:256 (find_package)\n'}
+[1.012834] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:301 (find_flann)\n'}
+[1.012850] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)\n'}
+[1.012867] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)\n'}
+[1.012884] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)\n'}
+[1.012900] (perception_winter) StderrLine: {'line': b'  CMakeLists.txt:17 (find_package)\n'}
+[1.012917] (perception_winter) StderrLine: {'line': b'This warning is for project developers.  Use -Wno-dev to suppress it.\n'}
+[1.012933] (perception_winter) StderrLine: {'line': b'\x1b[0m\n'}
+[1.020888] (perception_winter) StdoutLine: {'line': b"-- Checking for module 'flann'\n"}
+[1.030090] (perception_winter) StdoutLine: {'line': b'--   Found flann, version 1.9.1\n'}
+[1.100952] (perception_winter) StdoutLine: {'line': b'-- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so\n'}
+[1.101129] (perception_winter) StdoutLine: {'line': b'-- FLANN found (include: /usr/include, lib: /usr/lib/x86_64-linux-gnu/libflann_cpp.so)\n'}
+[1.101453] (-) TimerEvent: {}
+[1.201692] (-) TimerEvent: {}
+[1.302103] (-) TimerEvent: {}
+[1.402467] (-) TimerEvent: {}
+[1.502854] (-) TimerEvent: {}
+[1.603267] (-) TimerEvent: {}
+[1.703610] (-) TimerEvent: {}
+[1.803967] (-) TimerEvent: {}
+[1.904241] (-) TimerEvent: {}
+[2.004457] (-) TimerEvent: {}
+[2.088853] (perception_winter) StdoutLine: {'line': b"-- Checking for module 'libusb-1.0'\n"}
+[2.104591] (-) TimerEvent: {}
+[2.109287] (perception_winter) StdoutLine: {'line': b'--   Found libusb-1.0, version 1.0.25\n'}
+[2.173993] (perception_winter) StdoutLine: {'line': b'-- Found libusb: /usr/lib/x86_64-linux-gnu/libusb-1.0.so\n'}
+[2.176033] (perception_winter) StdoutLine: {'line': b'-- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)\n'}
+[2.204689] (-) TimerEvent: {}
+[2.254986] (perception_winter) StdoutLine: {'line': b'-- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)\n'}
+[2.304899] (-) TimerEvent: {}
+[2.405226] (-) TimerEvent: {}
+[2.421717] (perception_winter) StderrLine: {'line': b'\x1b[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):\n'}
+[2.421833] (perception_winter) StderrLine: {'line': b'  Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake\n'}
+[2.421858] (perception_winter) StderrLine: {'line': b'  --help-policy CMP0167" for policy details.  Use the cmake_policy command to\n'}
+[2.421878] (perception_winter) StderrLine: {'line': b'  set the policy and suppress this warning.\n'}
+[2.421897] (perception_winter) StderrLine: {'line': b'\n'}
+[2.421916] (perception_winter) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[2.421936] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)\n'}
+[2.421957] (perception_winter) StderrLine: {'line': b'  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)\n'}
+[2.421977] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)\n'}
+[2.421997] (perception_winter) StderrLine: {'line': b'  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)\n'}
+[2.422018] (perception_winter) StderrLine: {'line': b'  CMakeLists.txt:17 (find_package)\n'}
+[2.422038] (perception_winter) StderrLine: {'line': b'This warning is for project developers.  Use -Wno-dev to suppress it.\n'}
+[2.422059] (perception_winter) StderrLine: {'line': b'\x1b[0m\n'}
+[2.430339] (perception_winter) StdoutLine: {'line': b'-- Eigen found (include: /usr/include/eigen3, version: 3.4.0)\n'}
+[2.436557] (perception_winter) StdoutLine: {'line': b'-- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)\n'}
+[2.444669] (perception_winter) StdoutLine: {'line': b'-- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)\n'}
+[2.505397] (-) TimerEvent: {}
+[2.605679] (-) TimerEvent: {}
+[2.622120] (perception_winter) StdoutLine: {'line': b'-- Found Qhull version 8.0.2\n'}
+[2.705806] (-) TimerEvent: {}
+[2.785966] (perception_winter) StdoutLine: {'line': b'-- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)\n'}
+[2.806028] (-) TimerEvent: {}
+[2.906327] (-) TimerEvent: {}
+[2.946979] (perception_winter) StdoutLine: {'line': b'-- Found PCL_COMMON: /usr/lib/x86_64-linux-gnu/libpcl_common.so\n'}
+[2.947713] (perception_winter) StdoutLine: {'line': b'-- Found PCL_KDTREE: /usr/lib/x86_64-linux-gnu/libpcl_kdtree.so\n'}
+[2.948369] (perception_winter) StdoutLine: {'line': b'-- Found PCL_OCTREE: /usr/lib/x86_64-linux-gnu/libpcl_octree.so\n'}
+[2.949098] (perception_winter) StdoutLine: {'line': b'-- Found PCL_SEARCH: /usr/lib/x86_64-linux-gnu/libpcl_search.so\n'}
+[2.949795] (perception_winter) StdoutLine: {'line': b'-- Found PCL_SAMPLE_CONSENSUS: /usr/lib/x86_64-linux-gnu/libpcl_sample_consensus.so\n'}
+[2.950618] (perception_winter) StdoutLine: {'line': b'-- Found PCL_FILTERS: /usr/lib/x86_64-linux-gnu/libpcl_filters.so\n'}
+[2.950847] (perception_winter) StdoutLine: {'line': b'-- Found PCL_2D: /usr/include/pcl-1.12\n'}
+[2.950988] (perception_winter) StdoutLine: {'line': b'-- Found PCL_GEOMETRY: /usr/include/pcl-1.12\n'}
+[2.951876] (perception_winter) StdoutLine: {'line': b'-- Found PCL_IO: /usr/lib/x86_64-linux-gnu/libpcl_io.so\n'}
+[2.952595] (perception_winter) StdoutLine: {'line': b'-- Found PCL_FEATURES: /usr/lib/x86_64-linux-gnu/libpcl_features.so\n'}
+[2.953346] (perception_winter) StdoutLine: {'line': b'-- Found PCL_ML: /usr/lib/x86_64-linux-gnu/libpcl_ml.so\n'}
+[2.954282] (perception_winter) StdoutLine: {'line': b'-- Found PCL_SEGMENTATION: /usr/lib/x86_64-linux-gnu/libpcl_segmentation.so\n'}
+[2.955205] (perception_winter) StdoutLine: {'line': b'-- Found PCL_VISUALIZATION: /usr/lib/x86_64-linux-gnu/libpcl_visualization.so\n'}
+[2.956151] (perception_winter) StdoutLine: {'line': b'-- Found PCL_SURFACE: /usr/lib/x86_64-linux-gnu/libpcl_surface.so\n'}
+[2.956955] (perception_winter) StdoutLine: {'line': b'-- Found PCL_REGISTRATION: /usr/lib/x86_64-linux-gnu/libpcl_registration.so\n'}
+[2.957850] (perception_winter) StdoutLine: {'line': b'-- Found PCL_KEYPOINTS: /usr/lib/x86_64-linux-gnu/libpcl_keypoints.so\n'}
+[2.958654] (perception_winter) StdoutLine: {'line': b'-- Found PCL_TRACKING: /usr/lib/x86_64-linux-gnu/libpcl_tracking.so\n'}
+[2.959570] (perception_winter) StdoutLine: {'line': b'-- Found PCL_RECOGNITION: /usr/lib/x86_64-linux-gnu/libpcl_recognition.so\n'}
+[2.960514] (perception_winter) StdoutLine: {'line': b'-- Found PCL_STEREO: /usr/lib/x86_64-linux-gnu/libpcl_stereo.so\n'}
+[2.961381] (perception_winter) StdoutLine: {'line': b'-- Found PCL_APPS: /usr/lib/x86_64-linux-gnu/libpcl_apps.so\n'}
+[2.961860] (perception_winter) StdoutLine: {'line': b'-- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.12\n'}
+[2.962118] (perception_winter) StdoutLine: {'line': b'-- Found PCL_MODELER: /usr/include/pcl-1.12\n'}
+[2.962462] (perception_winter) StdoutLine: {'line': b'-- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.12\n'}
+[2.963282] (perception_winter) StdoutLine: {'line': b'-- Found PCL_OUTOFCORE: /usr/lib/x86_64-linux-gnu/libpcl_outofcore.so\n'}
+[2.964246] (perception_winter) StdoutLine: {'line': b'-- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so\n'}
+[2.966336] (perception_winter) StdoutLine: {'line': b'-- Found dv_msgs: 0.0.0 (/home/ishaan/IITBDV-msgs/install/dv_msgs/share/dv_msgs/cmake)\n'}
+[2.986704] (perception_winter) StdoutLine: {'line': b'-- Found Open3D: /usr/lib/x86_64-linux-gnu/cmake/Open3D/Open3DConfig.cmake (found version "0.14.1")\n'}
+[2.987151] (perception_winter) StderrLine: {'line': b'\x1b[33mCMake Warning (dev) at CMakeLists.txt:23 (find_package):\n'}
+[2.987297] (perception_winter) StderrLine: {'line': b'  Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.\n'}
+[2.987359] (perception_winter) StderrLine: {'line': b'  Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy\n'}
+[2.987407] (perception_winter) StderrLine: {'line': b'  command to set the policy and suppress this warning.\n'}
+[2.987452] (perception_winter) StderrLine: {'line': b'\n'}
+[2.987495] (perception_winter) StderrLine: {'line': b'  CMake variable PCL_ROOT is set to:\n'}
+[2.987538] (perception_winter) StderrLine: {'line': b'\n'}
+[2.987581] (perception_winter) StderrLine: {'line': b'    /usr\n'}
+[2.987624] (perception_winter) StderrLine: {'line': b'\n'}
+[2.987666] (perception_winter) StderrLine: {'line': b'  For compatibility, CMake is ignoring the variable.\n'}
+[2.987709] (perception_winter) StderrLine: {'line': b'This warning is for project developers.  Use -Wno-dev to suppress it.\n'}
+[2.987751] (perception_winter) StderrLine: {'line': b'\x1b[0m\n'}
+[2.992880] (perception_winter) StdoutLine: {'line': b'-- Using ONNX Runtime from: /usr/local/onnxruntime-linux-x64-1.17.1\n'}
+[3.006491] (-) TimerEvent: {}
+[3.062533] (perception_winter) StdoutLine: {'line': b'-- Configuring done (3.0s)\n'}
+[3.087345] (perception_winter) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[3.091951] (perception_winter) StdoutLine: {'line': b'-- Build files have been written to: /home/ishaan/Desktop/DebugFInal/build/perception_winter\n'}
+[3.105544] (perception_winter) CommandEnded: {'returncode': 0}
+[3.105987] (perception_winter) JobProgress: {'identifier': 'perception_winter', 'progress': 'build'}
+[3.106009] (perception_winter) Command: {'cmd': ['/home/ishaan/.local/bin/cmake', '--build', '/home/ishaan/Desktop/DebugFInal/build/perception_winter', '--', '-j32', '-l32'], 'cwd': '/home/ishaan/Desktop/DebugFInal/build/perception_winter', 'env': OrderedDict([('SHELL', '/bin/bash'), ('ROS_VERSION', '2'), ('SESSION_MANAGER', 'local/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:@/tmp/.ICE-unix/3182,unix/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:/tmp/.ICE-unix/3182'), ('QT_ACCESSIBILITY', '1'), ('COLORTERM', 'truecolor'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('_CE_M', ''), ('ROS_PYTHON_VERSION', '3'), ('LANGUAGE', 'en_IN:en'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('TERMINATOR_UUID', 'urn:uuid:c60a28fa-da07-48d3-8990-57955c0ec3d5'), ('XMODIFIERS', '@im=ibus'), ('DESKTOP_SESSION', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('PWD', '/home/ishaan/Desktop/DebugFInal/build/perception_winter'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('LOGNAME', 'ishaan'), ('ament_index_environment_hooks', '/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/opt/ros/humble/share/gazebo_ros2_control'), ('XDG_SESSION_TYPE', 'wayland'), ('ROS_DOMAIN_ID', '50'), ('SYSTEMD_EXEC_PID', '3217'), ('XAUTHORITY', '/run/user/1000/.mutter-Xwaylandauth.M51DF3'), ('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('HOME', '/home/ishaan'), ('USERNAME', 'ishaan'), ('IM_CONFIG_PHASE', '1'), ('LANG', 'en_US.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('VTE_VERSION', '6800'), ('WAYLAND_DISPLAY', 'wayland-0'), ('AMENT_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/opt/ros/humble'), ('CMAKE_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble'), ('COLCON_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install:/home/ishaan/IITBDV-msgs/install:/home/ishaan/eufs_ws/install'), ('INVOCATION_ID', 'b1c3f0c4724e44f2975eed69c13b8131'), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator25ef4b219e3b005583550f2b0f9f990c3'), ('MANAGERPID', '3020'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('GNOME_SETUP_DISPLAY', ':1'), ('_CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('XDG_SESSION_CLASS', 'user'), ('_CONDA_ROOT', '/home/ishaan/miniconda3'), ('IBUS_DISABLE_SNOOPER', '1'), ('PYTHONPATH', '/home/ishaan/eufs_ws/install/eufs_launcher/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_tracks/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_rqt/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_racecar/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_msgs/local/lib/python3.10/dist-packages:/home/ishaan/IITBDV-msgs/install/dv_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('TERM', 'xterm-256color'), ('_CE_CONDA', ''), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'ishaan'), ('_colcon_cd_root', '/opt/ros/humble/'), ('CONDA_SHLVL', '0'), ('DISPLAY', ':0'), ('SHLVL', '1'), ('QT_IM_MODULE', 'ibus'), ('IPGHOME', '/opt/ipg'), ('CONDA_PYTHON_EXE', '/home/ishaan/miniconda3/bin/python'), ('LD_LIBRARY_PATH', '/usr/local/cuda-12.6/lib64:/home/ishaan/eufs_ws/install/eufs_plugins/lib:/home/ishaan/eufs_ws/install/eufs_models/lib:/home/ishaan/eufs_ws/install/eufs_msgs/lib:/home/ishaan/IITBDV-msgs/install/dv_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('ROS_LOCALHOST_ONLY', '0'), ('LC_ALL', 'en_US.UTF-8'), ('JOURNAL_STREAM', '8:77461'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('CARMAKER_VER', '13.0.1'), ('PATH', '/home/ishaan/miniconda3/condabin:/opt/ipg/carmaker/linux64-13.0.1/bin:/usr/local/cuda-12.6/bin:/opt/ros/humble/bin:/home/ishaan/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/home/ishaan/.local/bin'), ('GDMSESSION', 'ubuntu'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('ROS_DISTRO', 'humble'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '4089'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/terminator.desktop'), ('EUFS_MASTER', '/home/ishaan/eufs_ws'), ('OLDPWD', '/home/ishaan/Desktop'), ('_', '/usr/bin/env')]), 'shell': False}
+[3.106542] (-) TimerEvent: {}
+[3.171860] (perception_winter) StdoutLine: {'line': b'[  8%] \x1b[32mBuilding CXX object CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer_main.cpp.o\x1b[0m\n'}
+[3.172265] (perception_winter) StdoutLine: {'line': b'[ 16%] \x1b[32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/main_1.cpp.o\x1b[0m\n'}
+[3.172516] (perception_winter) StdoutLine: {'line': b'[ 33%] \x1b[32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o\x1b[0m\n'}
+[3.172636] (perception_winter) StdoutLine: {'line': b'[ 33%] \x1b[32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/cone_seen_visual_node.cpp.o\x1b[0m\n'}
+[3.173191] (perception_winter) StdoutLine: {'line': b'[ 58%] \x1b[32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.o\x1b[0m\n'}
+[3.173387] (perception_winter) StdoutLine: {'line': b'[ 58%] \x1b[32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/main.cpp.o\x1b[0m\n'}
+[3.173525] (perception_winter) StdoutLine: {'line': b'[ 58%] \x1b[32mBuilding CXX object CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer.cpp.o\x1b[0m\n'}
+[3.173857] (perception_winter) StdoutLine: {'line': b'[ 66%] \x1b[32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_main.cpp.o\x1b[0m\n'}
+[3.206739] (-) TimerEvent: {}
+[3.307085] (-) TimerEvent: {}
+[3.407371] (-) TimerEvent: {}
+[3.507670] (-) TimerEvent: {}
+[3.607981] (-) TimerEvent: {}
+[3.708286] (-) TimerEvent: {}
+[3.808595] (-) TimerEvent: {}
+[3.908897] (-) TimerEvent: {}
+[4.009191] (-) TimerEvent: {}
+[4.109508] (-) TimerEvent: {}
+[4.209797] (-) TimerEvent: {}
+[4.310208] (-) TimerEvent: {}
+[4.410519] (-) TimerEvent: {}
+[4.510889] (-) TimerEvent: {}
+[4.611197] (-) TimerEvent: {}
+[4.711475] (-) TimerEvent: {}
+[4.811771] (-) TimerEvent: {}
+[4.912047] (-) TimerEvent: {}
+[5.012331] (-) TimerEvent: {}
+[5.112651] (-) TimerEvent: {}
+[5.212910] (-) TimerEvent: {}
+[5.313231] (-) TimerEvent: {}
+[5.413544] (-) TimerEvent: {}
+[5.513808] (-) TimerEvent: {}
+[5.614097] (-) TimerEvent: {}
+[5.714333] (-) TimerEvent: {}
+[5.814561] (-) TimerEvent: {}
+[5.914823] (-) TimerEvent: {}
+[6.015230] (-) TimerEvent: {}
+[6.115520] (-) TimerEvent: {}
+[6.215790] (-) TimerEvent: {}
+[6.316108] (-) TimerEvent: {}
+[6.416351] (-) TimerEvent: {}
+[6.516604] (-) TimerEvent: {}
+[6.616929] (-) TimerEvent: {}
+[6.717187] (-) TimerEvent: {}
+[6.817556] (-) TimerEvent: {}
+[6.917876] (-) TimerEvent: {}
+[7.018200] (-) TimerEvent: {}
+[7.118375] (-) TimerEvent: {}
+[7.218702] (-) TimerEvent: {}
+[7.319034] (-) TimerEvent: {}
+[7.419310] (-) TimerEvent: {}
+[7.464025] (perception_winter) StderrLine: {'line': b'\x1b[01m\x1b[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kstd::vector<std::vector<std::array<double, 4> > > perception_winter::ClusterProcessor::filterClustersBySize(const std::vector<std::vector<std::array<double, 4> > >&, std::vector<bool, std::allocator<bool> >&, rclcpp::Logger)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.464203] (perception_winter) StderrLine: {'line': b'\x1b[01m\x1b[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:514:16:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused variable \xe2\x80\x98\x1b[01m\x1b[Kcentroid_y\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable\x07-Wunused-variable\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.464265] (perception_winter) StderrLine: {'line': b'  514 |         double \x1b[01;35m\x1b[Kcentroid_y\x1b[m\x1b[K = sum_y / cluster.size();\n'}
+[7.464317] (perception_winter) StderrLine: {'line': b'      |                \x1b[01;35m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.464479] (perception_winter) StderrLine: {'line': b'\x1b[01m\x1b[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:474:75:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Klogger\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.464557] (perception_winter) StderrLine: {'line': b'  474 |                                                            \x1b[01;35m\x1b[Krclcpp::Logger logger\x1b[m\x1b[K) {\n'}
+[7.464612] (perception_winter) StderrLine: {'line': b'      |                                                            \x1b[01;35m\x1b[K~~~~~~~~~~~~~~~^~~~~~\x1b[m\x1b[K\n'}
+[7.466798] (perception_winter) StderrLine: {'line': b'\x1b[01m\x1b[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvoid perception_winter::ClusterProcessor::detectConesInClusters(const std::vector<std::vector<std::array<double, 4> > >&, const std::vector<bool, std::allocator<bool> >&, std::vector<std::array<double, 3> >&, std::vector<int>&, perception_winter::ConeClassifier&, perception_winter::HeuristicClassifier&, rclcpp::Logger)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.466884] (perception_winter) StderrLine: {'line': b'\x1b[01m\x1b[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:550:60:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Klogger\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.466949] (perception_winter) StderrLine: {'line': b'  550 |                                             \x1b[01;35m\x1b[Krclcpp::Logger logger\x1b[m\x1b[K) {\n'}
+[7.467002] (perception_winter) StderrLine: {'line': b'      |                                             \x1b[01;35m\x1b[K~~~~~~~~~~~~~~~^~~~~~\x1b[m\x1b[K\n'}
+[7.519449] (-) TimerEvent: {}
+[7.619760] (-) TimerEvent: {}
+[7.720090] (-) TimerEvent: {}
+[7.820416] (-) TimerEvent: {}
+[7.920684] (-) TimerEvent: {}
+[7.934436] (perception_winter) StdoutLine: {'line': b'[ 75%] \x1b[1m\x1b[32mLinking CXX executable lidar_clusters_visualizer_node\x1b[0m\n'}
+[7.981026] (perception_winter) StdoutLine: {'line': b'[ 83%] \x1b[1m\x1b[32mLinking CXX executable cone_visualizer_node\x1b[0m\n'}
+[7.998315] (perception_winter) StdoutLine: {'line': b'[ 91%] \x1b[1m\x1b[32mLinking CXX executable filtered_points_node\x1b[0m\n'}
+[8.020879] (-) TimerEvent: {}
+[8.121217] (-) TimerEvent: {}
+[8.167105] (perception_winter) StdoutLine: {'line': b'[ 91%] \x1b[0mBuilt target lidar_clusters_visualizer_node\x1b[0m\n'}
+[8.214517] (perception_winter) StdoutLine: {'line': b'[ 91%] \x1b[0mBuilt target cone_visualizer_node\x1b[0m\n'}
+[8.221293] (-) TimerEvent: {}
+[8.229885] (perception_winter) StdoutLine: {'line': b'[ 91%] \x1b[0mBuilt target filtered_points_node\x1b[0m\n'}
+[8.321486] (-) TimerEvent: {}
+[8.421784] (-) TimerEvent: {}
+[8.521985] (-) TimerEvent: {}
+[8.622208] (-) TimerEvent: {}
+[8.722434] (-) TimerEvent: {}
+[8.822755] (-) TimerEvent: {}
+[8.923009] (-) TimerEvent: {}
+[9.023222] (-) TimerEvent: {}
+[9.123439] (-) TimerEvent: {}
+[9.223755] (-) TimerEvent: {}
+[9.324077] (-) TimerEvent: {}
+[9.424290] (-) TimerEvent: {}
+[9.524591] (-) TimerEvent: {}
+[9.624903] (-) TimerEvent: {}
+[9.725254] (-) TimerEvent: {}
+[9.825463] (-) TimerEvent: {}
+[9.925768] (-) TimerEvent: {}
+[10.026070] (-) TimerEvent: {}
+[10.126283] (-) TimerEvent: {}
+[10.226555] (-) TimerEvent: {}
+[10.326852] (-) TimerEvent: {}
+[10.427148] (-) TimerEvent: {}
+[10.527453] (-) TimerEvent: {}
+[10.627774] (-) TimerEvent: {}
+[10.728084] (-) TimerEvent: {}
+[10.828373] (-) TimerEvent: {}
+[10.928660] (-) TimerEvent: {}
+[11.028887] (-) TimerEvent: {}
+[11.129189] (-) TimerEvent: {}
+[11.229497] (-) TimerEvent: {}
+[11.329793] (-) TimerEvent: {}
+[11.430081] (-) TimerEvent: {}
+[11.530294] (-) TimerEvent: {}
+[11.630584] (-) TimerEvent: {}
+[11.730912] (-) TimerEvent: {}
+[11.831213] (-) TimerEvent: {}
+[11.931507] (-) TimerEvent: {}
+[12.031800] (-) TimerEvent: {}
+[12.132095] (-) TimerEvent: {}
+[12.232379] (-) TimerEvent: {}
+[12.332669] (-) TimerEvent: {}
+[12.432941] (-) TimerEvent: {}
+[12.533245] (-) TimerEvent: {}
+[12.633544] (-) TimerEvent: {}
+[12.733726] (-) TimerEvent: {}
+[12.834019] (-) TimerEvent: {}
+[12.934316] (-) TimerEvent: {}
+[13.034596] (-) TimerEvent: {}
+[13.134876] (-) TimerEvent: {}
+[13.235163] (-) TimerEvent: {}
+[13.335443] (-) TimerEvent: {}
+[13.435721] (-) TimerEvent: {}
+[13.536004] (-) TimerEvent: {}
+[13.636190] (-) TimerEvent: {}
+[13.736393] (-) TimerEvent: {}
+[13.836587] (-) TimerEvent: {}
+[13.936893] (-) TimerEvent: {}
+[14.037176] (-) TimerEvent: {}
+[14.137464] (-) TimerEvent: {}
+[14.237748] (-) TimerEvent: {}
+[14.337943] (-) TimerEvent: {}
+[14.438251] (-) TimerEvent: {}
+[14.538529] (-) TimerEvent: {}
+[14.638801] (-) TimerEvent: {}
+[14.739094] (-) TimerEvent: {}
+[14.839866] (-) TimerEvent: {}
+[14.940088] (-) TimerEvent: {}
+[15.040312] (-) TimerEvent: {}
+[15.140609] (-) TimerEvent: {}
+[15.240859] (-) TimerEvent: {}
+[15.341183] (-) TimerEvent: {}
+[15.441396] (-) TimerEvent: {}
+[15.466404] (perception_winter) StdoutLine: {'line': b'[100%] \x1b[1m\x1b[32mLinking CXX executable process_lidar_node\x1b[0m\n'}
+[15.541515] (-) TimerEvent: {}
+[15.641721] (-) TimerEvent: {}
+[15.742019] (-) TimerEvent: {}
+[15.842261] (-) TimerEvent: {}
+[15.942488] (-) TimerEvent: {}
+[16.042743] (-) TimerEvent: {}
+[16.143049] (-) TimerEvent: {}
+[16.243278] (-) TimerEvent: {}
+[16.343505] (-) TimerEvent: {}
+[16.443760] (-) TimerEvent: {}
+[16.459438] (perception_winter) StdoutLine: {'line': b'[100%] \x1b[0mBuilt target process_lidar_node\x1b[0m\n'}
+[16.469568] (perception_winter) CommandEnded: {'returncode': 0}
+[16.469984] (perception_winter) JobProgress: {'identifier': 'perception_winter', 'progress': 'install'}
+[16.519286] (perception_winter) Command: {'cmd': ['/home/ishaan/.local/bin/cmake', '--install', '/home/ishaan/Desktop/DebugFInal/build/perception_winter'], 'cwd': '/home/ishaan/Desktop/DebugFInal/build/perception_winter', 'env': OrderedDict([('SHELL', '/bin/bash'), ('ROS_VERSION', '2'), ('SESSION_MANAGER', 'local/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:@/tmp/.ICE-unix/3182,unix/ishaan-ROG-Strix-SCAR-16-G634JZR-G634JZR:/tmp/.ICE-unix/3182'), ('QT_ACCESSIBILITY', '1'), ('COLORTERM', 'truecolor'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('_CE_M', ''), ('ROS_PYTHON_VERSION', '3'), ('LANGUAGE', 'en_IN:en'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('TERMINATOR_UUID', 'urn:uuid:c60a28fa-da07-48d3-8990-57955c0ec3d5'), ('XMODIFIERS', '@im=ibus'), ('DESKTOP_SESSION', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('PWD', '/home/ishaan/Desktop/DebugFInal/build/perception_winter'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('LOGNAME', 'ishaan'), ('ament_index_environment_hooks', '/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/opt/ros/humble/share/gazebo_ros2_control'), ('XDG_SESSION_TYPE', 'wayland'), ('ROS_DOMAIN_ID', '50'), ('SYSTEMD_EXEC_PID', '3217'), ('XAUTHORITY', '/run/user/1000/.mutter-Xwaylandauth.M51DF3'), ('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('HOME', '/home/ishaan'), ('USERNAME', 'ishaan'), ('IM_CONFIG_PHASE', '1'), ('LANG', 'en_US.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('VTE_VERSION', '6800'), ('WAYLAND_DISPLAY', 'wayland-0'), ('AMENT_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/opt/ros/humble'), ('CMAKE_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install/perception_winter:/home/ishaan/eufs_ws/install/eufs_sensors:/home/ishaan/eufs_ws/install/eufs_plugins:/home/ishaan/eufs_ws/install/eufs_models:/home/ishaan/eufs_ws/install/eufs_msgs:/home/ishaan/IITBDV-msgs/install/dv_msgs:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble'), ('COLCON_PREFIX_PATH', '/home/ishaan/Desktop/DebugFInal/install:/home/ishaan/IITBDV-msgs/install:/home/ishaan/eufs_ws/install'), ('INVOCATION_ID', 'b1c3f0c4724e44f2975eed69c13b8131'), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator25ef4b219e3b005583550f2b0f9f990c3'), ('MANAGERPID', '3020'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('GNOME_SETUP_DISPLAY', ':1'), ('_CONDA_EXE', '/home/ishaan/miniconda3/bin/conda'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('XDG_SESSION_CLASS', 'user'), ('_CONDA_ROOT', '/home/ishaan/miniconda3'), ('IBUS_DISABLE_SNOOPER', '1'), ('PYTHONPATH', '/home/ishaan/eufs_ws/install/eufs_launcher/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_tracks/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_rqt/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_racecar/lib/python3.10/site-packages:/home/ishaan/eufs_ws/install/eufs_msgs/local/lib/python3.10/dist-packages:/home/ishaan/IITBDV-msgs/install/dv_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('TERM', 'xterm-256color'), ('_CE_CONDA', ''), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'ishaan'), ('_colcon_cd_root', '/opt/ros/humble/'), ('CONDA_SHLVL', '0'), ('DISPLAY', ':0'), ('SHLVL', '1'), ('QT_IM_MODULE', 'ibus'), ('IPGHOME', '/opt/ipg'), ('CONDA_PYTHON_EXE', '/home/ishaan/miniconda3/bin/python'), ('LD_LIBRARY_PATH', '/usr/local/cuda-12.6/lib64:/home/ishaan/eufs_ws/install/eufs_plugins/lib:/home/ishaan/eufs_ws/install/eufs_models/lib:/home/ishaan/eufs_ws/install/eufs_msgs/lib:/home/ishaan/IITBDV-msgs/install/dv_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('ROS_LOCALHOST_ONLY', '0'), ('LC_ALL', 'en_US.UTF-8'), ('JOURNAL_STREAM', '8:77461'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('CARMAKER_VER', '13.0.1'), ('PATH', '/home/ishaan/miniconda3/condabin:/opt/ipg/carmaker/linux64-13.0.1/bin:/usr/local/cuda-12.6/bin:/opt/ros/humble/bin:/home/ishaan/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/home/ishaan/.local/bin'), ('GDMSESSION', 'ubuntu'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('ROS_DISTRO', 'humble'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '4089'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/terminator.desktop'), ('EUFS_MASTER', '/home/ishaan/eufs_ws'), ('OLDPWD', '/home/ishaan/Desktop'), ('_', '/usr/bin/env')]), 'shell': False}
+[16.543922] (-) TimerEvent: {}
+[16.562796] (perception_winter) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[16.562890] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node\n'}
+[16.568188] (perception_winter) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/process_lidar_node" to ""\n'}
+[16.568273] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node\n'}
+[16.570255] (perception_winter) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node" to ""\n'}
+[16.570320] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/filtered_points_node\n'}
+[16.571975] (perception_winter) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/filtered_points_node" to ""\n'}
+[16.572049] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/lidar_clusters_visualizer_node\n'}
+[16.573950] (perception_winter) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/lidar_clusters_visualizer_node" to ""\n'}
+[16.574043] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include\n'}
+[16.574090] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter\n'}
+[16.574127] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/process_lidar.hpp\n'}
+[16.574160] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/lidar_clusters_visualizer.hpp\n'}
+[16.574192] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/filtered_points_visual_node.hpp\n'}
+[16.574345] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp\n'}
+[16.574447] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx\n'}
+[16.574488] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/package_run_dependencies/perception_winter\n'}
+[16.574524] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/parent_prefix_path/perception_winter\n'}
+[16.574558] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.sh\n'}
+[16.574590] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/ament_prefix_path.dsv\n'}
+[16.574621] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.sh\n'}
+[16.574652] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/environment/path.dsv\n'}
+[16.574682] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.bash\n'}
+[16.574742] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.sh\n'}
+[16.574789] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.zsh\n'}
+[16.574822] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/local_setup.dsv\n'}
+[16.574868] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.dsv\n'}
+[16.574902] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/packages/perception_winter\n'}
+[16.574933] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig.cmake\n'}
+[16.574963] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cmake/perception_winterConfig-version.cmake\n'}
+[16.574992] (perception_winter) StdoutLine: {'line': b'-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/package.xml\n'}
+[16.576362] (perception_winter) CommandEnded: {'returncode': 0}
+[16.594742] (perception_winter) JobEnded: {'identifier': 'perception_winter', 'rc': 0}
+[16.595843] (-) EventReactorShutdown: {}

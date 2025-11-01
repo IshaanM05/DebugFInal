@@ -48,9 +48,9 @@ bool ConeClassifier::initialize(const std::string& model_path) {
         auto output_name_ptr = session_->GetOutputNameAllocated(0, allocator);
         output_node_names_.push_back(output_name_ptr.get());
 
-        // Get input dimensions
+        // Get input dimensions - FIXED: Properly declare the variable first
         Ort::TypeInfo input_type_info = session_->GetInputTypeInfo(0);
-        auto input_tensor_info = input_type_info.GetTensorTypeAndShapeInfo();
+        auto input_tensor_info = input_type_info.GetTensorTypeAndShapeInfo(); // FIXED: Use input_type_info, not input_tensor_info
         input_node_dims_ = input_tensor_info.GetShape();
 
         RCLCPP_INFO(rclcpp::get_logger("cone_classifier"), 
@@ -711,6 +711,32 @@ bool ClusterProcessor::isOrangeConeCandidate(const Cluster& cluster) const {
     return (distance > lidar_constants::ORANGE_CONE_DISTANCE_THRESHOLD);
 }
 
+std::vector<Point3D> ClusterProcessor::calculateClusterCenters(const std::vector<Cluster>& clusters) const {
+    std::vector<Point3D> centers;
+    centers.reserve(clusters.size());
+
+    for (const auto& cluster : clusters) {
+        if (cluster.empty()) continue;
+
+        // Calculate centroid of the cluster
+        double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
+        for (const auto& point : cluster) {
+            sum_x += point[0];
+            sum_y += point[1];
+            sum_z += point[2];
+        }
+
+        Point3D center = {
+            sum_x / cluster.size(),
+            sum_y / cluster.size(),
+            sum_z / cluster.size()
+        };
+        centers.push_back(center);
+    }
+
+    return centers;
+}
+
 // =============================================
 // POINT CLOUD EXTRACTOR IMPLEMENTATION
 // =============================================
@@ -811,6 +837,10 @@ ProcessLidar::ProcessLidar() :
     auto result = rcutils_logging_set_logger_level(debug_logger.get_name(), RCUTILS_LOG_SEVERITY_DEBUG);
     (void)result;
 
+    // Declare visualization control parameters
+    this->declare_parameter<bool>("publish_cluster_centers", true);
+    this->declare_parameter<bool>("publish_filtered_points", true);
+    
     // Initialize modular components
     initializeComponents();
     
@@ -832,12 +862,14 @@ ProcessLidar::ProcessLidar() :
     // Output publishers
     detected_cones_pub_ = create_publisher<dv_msgs::msg::IndexedTrack>("/perception/cones", 10);
     filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
+    cluster_centers_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/clusters", 10); // New publisher for cluster centers
 
     RCLCPP_INFO(get_logger(), "=== MODULAR LIDAR PROCESSING NODE STARTED ===");
     RCLCPP_INFO(get_logger(), "Dual input topics: %s, %s", 
                 lidar_constants::LIDAR_RAW_TOPIC, lidar_constants::LIDAR_RAW_TOPIC2);
     RCLCPP_INFO(get_logger(), "Output topic: /perception/cones");
     RCLCPP_INFO(get_logger(), "Filtered points visualization topic: /perception/filtered_points");
+    RCLCPP_INFO(get_logger(), "Cluster centers visualization topic: /perception/clusters");
 }
 
 ProcessLidar::~ProcessLidar() {
@@ -1014,6 +1046,10 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
         RCLCPP_INFO(get_logger(), "=== STARTING PROCESSING PIPELINE ===");
         RCLCPP_INFO(get_logger(), "Input points: %zu", points.size());
 
+        // Get visualization control parameters
+        publish_cluster_centers_ = this->get_parameter("publish_cluster_centers").as_bool();
+        publish_filtered_points_ = this->get_parameter("publish_filtered_points").as_bool();
+
         // Stage 1: Point Cloud Filtering
         auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         if (!point_cloud_processor_->filterCarBodyAndROI(points, cloud, get_logger())) {
@@ -1032,13 +1068,23 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
         auto clusters = cluster_processor_->clusterPoints(cloud_filtered, get_logger());
         if (clusters.empty()) {
             RCLCPP_WARN(get_logger(), "Stage 3 failed: No clusters found");
-            publishConeClusterPoints(clusters);
+            if (publish_filtered_points_) {
+                publishConeClusterPoints(clusters);
+            }
+            if (publish_cluster_centers_) {
+                publishClusterCenters(clusters);
+            }
             return true; // No clusters is not necessarily a failure
         }
 
         // Stage 4: Cluster Filtering
         std::vector<bool> orange_candidates;
         auto filtered_clusters = cluster_processor_->filterClustersBySize(clusters, orange_candidates, get_logger());
+
+        // Publish cluster centers for visualization (before color classification)
+        if (publish_cluster_centers_) {
+            publishClusterCenters(filtered_clusters);
+        }
 
         // Stage 5: Cone Detection
         std::vector<Point3D> cone_positions;
@@ -1056,9 +1102,11 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
             publishDetectedCones({}, {});
         }
         
-        // Always publish clustered points for visualization
+        // Always publish clustered points for visualization if enabled
         // This is crucial for the FilteredPointsVisualNode to work
-        publishConeClusterPoints(clusters);
+        if (publish_filtered_points_) {
+            publishConeClusterPoints(clusters);
+        }
 
         RCLCPP_INFO(get_logger(), "=== PROCESSING PIPELINE COMPLETED SUCCESSFULLY ===");
         return true;
@@ -1139,6 +1187,30 @@ void ProcessLidar::publishConeClusterPoints(const std::vector<Cluster>& cone_clu
     
     RCLCPP_DEBUG(get_logger(), "Published %zu clustered points (from %zu clusters) for visualization", 
                  total_points, cone_clusters.size());
+}
+
+void ProcessLidar::publishClusterCenters(const std::vector<Cluster>& filtered_clusters) {
+    if (!cluster_centers_pub_) {
+        RCLCPP_WARN(get_logger(), "Cluster centers publisher not available");
+        return;
+    }
+
+    auto message = std_msgs::msg::Float32MultiArray();
+    
+    // Calculate cluster centers using the new method
+    auto cluster_centers = cluster_processor_->calculateClusterCenters(filtered_clusters);
+    
+    // Publish cluster centers in format [x1, y1, x2, y2, ...] for compatibility with Python visualizer
+    for (const auto& center : cluster_centers) {
+        message.data.push_back(static_cast<float>(center[0])); // x
+        message.data.push_back(static_cast<float>(center[1])); // y
+        // Note: We're only publishing x and y coordinates to match the Python visualizer expectation
+    }
+    
+    cluster_centers_pub_->publish(message);
+    
+    RCLCPP_DEBUG(get_logger(), "Published %zu cluster centers for visualization", 
+                 cluster_centers.size());
 }
 
 void ProcessLidar::publishProcessingMetrics(const std::chrono::milliseconds& duration) {

@@ -36,25 +36,25 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 100,
+				"line" : 120,
 				"parent" : 0
 			},
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 107,
+				"line" : 128,
 				"parent" : 0
 			},
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 111,
+				"line" : 132,
 				"parent" : 0
 			},
 			{
 				"command" : 5,
 				"file" : 0,
-				"line" : 114,
+				"line" : 135,
 				"parent" : 0
 			},
 			{
@@ -244,7 +244,7 @@
 				"process_lidar_node"
 			],
 			"targetId" : "process_lidar_node::@6890427a1f51a3e7e1df",
-			"targetIndex" : 3,
+			"targetIndex" : 4,
 			"type" : "target"
 		},
 		{
@@ -253,7 +253,7 @@
 			"cxxModuleBmiTarget" : 
 			{
 				"id" : "process_lidar_node::@6890427a1f51a3e7e1df",
-				"index" : 3
+				"index" : 4
 			},
 			"destination" : "lib/perception_winter",
 			"type" : "cxxModuleBmi"
@@ -300,6 +300,29 @@
 			{
 				"id" : "filtered_points_node::@6890427a1f51a3e7e1df",
 				"index" : 1
+			},
+			"destination" : "lib/perception_winter",
+			"type" : "cxxModuleBmi"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "lib/perception_winter",
+			"paths" : 
+			[
+				"lidar_clusters_visualizer_node"
+			],
+			"targetId" : "lidar_clusters_visualizer_node::@6890427a1f51a3e7e1df",
+			"targetIndex" : 2,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"cxxModuleBmiTarget" : 
+			{
+				"id" : "lidar_clusters_visualizer_node::@6890427a1f51a3e7e1df",
+				"index" : 2
 			},
 			"destination" : "lib/perception_winter",
 			"type" : "cxxModuleBmi"

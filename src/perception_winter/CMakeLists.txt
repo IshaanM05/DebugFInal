@@ -38,6 +38,7 @@ find_library(ONNXRUNTIME_LIB
   REQUIRED
 )
 
+# --- Executable Definitions ---
 add_executable(process_lidar_node
   src/process_lidar.cpp
   src/main.cpp
@@ -51,6 +52,12 @@ add_executable(cone_visualizer_node
 add_executable(filtered_points_node
   src/filtered_points_visual_node.cpp
   src/filtered_points_visual_main.cpp
+)
+
+# NEW: Add cluster visualizer node
+add_executable(lidar_clusters_visualizer_node
+  src/lidar_clusters_visualizer.cpp
+  src/lidar_clusters_visualizer_main.cpp
 )
 
 # --- Process Lidar Node ---
@@ -85,6 +92,7 @@ target_link_libraries(cone_visualizer_node
   ${ament_cmake_libraries}
 )
 
+# --- Filtered Points Visualizer Node ---
 ament_target_dependencies(filtered_points_node 
   rclcpp std_msgs visualization_msgs
 )
@@ -96,11 +104,24 @@ target_link_libraries(filtered_points_node
   ${ament_cmake_libraries}
 )
 
+# --- NEW: Lidar Clusters Visualizer Node ---
+ament_target_dependencies(lidar_clusters_visualizer_node 
+  rclcpp std_msgs visualization_msgs
+)
+target_include_directories(lidar_clusters_visualizer_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(lidar_clusters_visualizer_node
+  ${ament_cmake_libraries}
+)
+
 # --- Installation ---
 install(TARGETS
   process_lidar_node
   cone_visualizer_node
-  filtered_points_node  
+  filtered_points_node
+  lidar_clusters_visualizer_node  # NEW: Install the cluster visualizer
   DESTINATION lib/${PROJECT_NAME}
 )
 

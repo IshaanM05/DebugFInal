@@ -7,7 +7,7 @@
 				{
 					"build" : ".",
 					"hasInstallRule" : true,
-					"jsonFile" : "directory-.-677aea1cd594a391227b.json",
+					"jsonFile" : "directory-.-c1e43d7b08d7881120a9.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.12"
@@ -20,7 +20,8 @@
 						1,
 						2,
 						3,
-						4
+						4,
+						5
 					]
 				}
 			],
@@ -39,7 +40,8 @@
 						1,
 						2,
 						3,
-						4
+						4,
+						5
 					]
 				}
 			],
@@ -48,15 +50,22 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "cone_visualizer_node::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-cone_visualizer_node-19653358174ccfc8bcf7.json",
+					"jsonFile" : "target-cone_visualizer_node-f8e22509a40deb2f614d.json",
 					"name" : "cone_visualizer_node",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
 					"id" : "filtered_points_node::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-filtered_points_node-335775d34c8c8171dfd8.json",
+					"jsonFile" : "target-filtered_points_node-f7d198896ffbaa4dce89.json",
 					"name" : "filtered_points_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "lidar_clusters_visualizer_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-lidar_clusters_visualizer_node-1be7c9c485ee9c045c9d.json",
+					"name" : "lidar_clusters_visualizer_node",
 					"projectIndex" : 0
 				},
 				{
@@ -69,7 +78,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "process_lidar_node::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-process_lidar_node-bf9382c01db70e8b1e24.json",
+					"jsonFile" : "target-process_lidar_node-a76f5c235ade549e803a.json",
 					"name" : "process_lidar_node",
 					"projectIndex" : 0
 				},

@@ -236,6 +236,19 @@ filtered_points_node/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/build
 .PHONY : filtered_points_node/fast
 
+#=============================================================================
+# Target rules for targets named lidar_clusters_visualizer_node
+
+# Build rule for target.
+lidar_clusters_visualizer_node: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lidar_clusters_visualizer_node
+.PHONY : lidar_clusters_visualizer_node
+
+# fast build rule for target.
+lidar_clusters_visualizer_node/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lidar_clusters_visualizer_node.dir/build.make CMakeFiles/lidar_clusters_visualizer_node.dir/build
+.PHONY : lidar_clusters_visualizer_node/fast
+
 src/cone_seen_visual_node.o: src/cone_seen_visual_node.cpp.o
 .PHONY : src/cone_seen_visual_node.o
 
@@ -307,6 +320,54 @@ src/filtered_points_visual_node.s: src/filtered_points_visual_node.cpp.s
 src/filtered_points_visual_node.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filtered_points_node.dir/build.make CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.s
 .PHONY : src/filtered_points_visual_node.cpp.s
+
+src/lidar_clusters_visualizer.o: src/lidar_clusters_visualizer.cpp.o
+.PHONY : src/lidar_clusters_visualizer.o
+
+# target to build an object file
+src/lidar_clusters_visualizer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lidar_clusters_visualizer_node.dir/build.make CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer.cpp.o
+.PHONY : src/lidar_clusters_visualizer.cpp.o
+
+src/lidar_clusters_visualizer.i: src/lidar_clusters_visualizer.cpp.i
+.PHONY : src/lidar_clusters_visualizer.i
+
+# target to preprocess a source file
+src/lidar_clusters_visualizer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lidar_clusters_visualizer_node.dir/build.make CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer.cpp.i
+.PHONY : src/lidar_clusters_visualizer.cpp.i
+
+src/lidar_clusters_visualizer.s: src/lidar_clusters_visualizer.cpp.s
+.PHONY : src/lidar_clusters_visualizer.s
+
+# target to generate assembly for a file
+src/lidar_clusters_visualizer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lidar_clusters_visualizer_node.dir/build.make CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer.cpp.s
+.PHONY : src/lidar_clusters_visualizer.cpp.s
+
+src/lidar_clusters_visualizer_main.o: src/lidar_clusters_visualizer_main.cpp.o
+.PHONY : src/lidar_clusters_visualizer_main.o
+
+# target to build an object file
+src/lidar_clusters_visualizer_main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lidar_clusters_visualizer_node.dir/build.make CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer_main.cpp.o
+.PHONY : src/lidar_clusters_visualizer_main.cpp.o
+
+src/lidar_clusters_visualizer_main.i: src/lidar_clusters_visualizer_main.cpp.i
+.PHONY : src/lidar_clusters_visualizer_main.i
+
+# target to preprocess a source file
+src/lidar_clusters_visualizer_main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lidar_clusters_visualizer_node.dir/build.make CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer_main.cpp.i
+.PHONY : src/lidar_clusters_visualizer_main.cpp.i
+
+src/lidar_clusters_visualizer_main.s: src/lidar_clusters_visualizer_main.cpp.s
+.PHONY : src/lidar_clusters_visualizer_main.s
+
+# target to generate assembly for a file
+src/lidar_clusters_visualizer_main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lidar_clusters_visualizer_node.dir/build.make CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer_main.cpp.s
+.PHONY : src/lidar_clusters_visualizer_main.cpp.s
 
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
@@ -397,6 +458,7 @@ help:
 	@echo "... uninstall"
 	@echo "... cone_visualizer_node"
 	@echo "... filtered_points_node"
+	@echo "... lidar_clusters_visualizer_node"
 	@echo "... process_lidar_node"
 	@echo "... src/cone_seen_visual_node.o"
 	@echo "... src/cone_seen_visual_node.i"
@@ -407,6 +469,12 @@ help:
 	@echo "... src/filtered_points_visual_node.o"
 	@echo "... src/filtered_points_visual_node.i"
 	@echo "... src/filtered_points_visual_node.s"
+	@echo "... src/lidar_clusters_visualizer.o"
+	@echo "... src/lidar_clusters_visualizer.i"
+	@echo "... src/lidar_clusters_visualizer.s"
+	@echo "... src/lidar_clusters_visualizer_main.o"
+	@echo "... src/lidar_clusters_visualizer_main.i"
+	@echo "... src/lidar_clusters_visualizer_main.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

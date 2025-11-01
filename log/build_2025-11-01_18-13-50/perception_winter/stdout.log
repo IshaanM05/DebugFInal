@@ -1,12 +1,3 @@
-[0mCMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
-  Compatibility with CMake < 3.10 will be removed from a future version of
-  CMake.
-
-  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
-  to tell CMake that the project requires at least <min> but has been updated
-  to work with policies introduced by <max> or earlier.
-
-[0m
 -- The C compiler identification is GNU 11.4.0
 -- The CXX compiler identification is GNU 11.4.0
 -- Detecting C compiler ABI info
@@ -38,62 +29,10 @@
 -- Found sensor_msgs: 4.9.0 (/opt/ros/humble/share/sensor_msgs/cmake)
 -- Found visualization_msgs: 4.9.0 (/opt/ros/humble/share/visualization_msgs/cmake)
 -- Found pcl_conversions: 2.4.5 (/opt/ros/humble/share/pcl_conversions/cmake)
-[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:146 (find_package):
-  Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
-  variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
-  cmake_policy command to set the policy and suppress this warning.
-
-  CMake variable EIGEN_ROOT is set to:
-
-    /usr/include/eigen3
-
-  For compatibility, find_package is ignoring the variable, but code in a
-  .cmake module might still use it.
-Call Stack (most recent call first):
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:299 (find_eigen)
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
-  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
-  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
-  CMakeLists.txt:17 (find_package)
-This warning is for project developers.  Use -Wno-dev to suppress it.
-[0m
 -- Checking for module 'eigen3'
 --   Found eigen3, version 3.4.0
 -- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1")
 -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
-[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
-  Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
-  --help-policy CMP0167" for policy details.  Use the cmake_policy command to
-  set the policy and suppress this warning.
-
-Call Stack (most recent call first):
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
-  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
-  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
-  CMakeLists.txt:17 (find_package)
-This warning is for project developers.  Use -Wno-dev to suppress it.
-[0m
-[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/Modules/FindFLANN.cmake:44 (find_package):
-  Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
-  variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
-  cmake_policy command to set the policy and suppress this warning.
-
-  CMake variable FLANN_ROOT is set to:
-
-    /usr
-
-  For compatibility, find_package is ignoring the variable, but code in a
-  .cmake module might still use it.
-Call Stack (most recent call first):
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:256 (find_package)
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:301 (find_flann)
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
-  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
-  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
-  CMakeLists.txt:17 (find_package)
-This warning is for project developers.  Use -Wno-dev to suppress it.
-[0m
 -- Checking for module 'flann'
 --   Found flann, version 1.9.1
 -- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so
@@ -103,19 +42,6 @@ This warning is for project developers.  Use -Wno-dev to suppress it.
 -- Found libusb: /usr/lib/x86_64-linux-gnu/libusb-1.0.so
 -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
 -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
-[33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
-  Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
-  --help-policy CMP0167" for policy details.  Use the cmake_policy command to
-  set the policy and suppress this warning.
-
-Call Stack (most recent call first):
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
-  /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
-  /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
-  /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
-  CMakeLists.txt:17 (find_package)
-This warning is for project developers.  Use -Wno-dev to suppress it.
-[0m
 -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
 -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
 -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
@@ -148,43 +74,24 @@ This warning is for project developers.  Use -Wno-dev to suppress it.
 -- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so
 -- Found dv_msgs: 0.0.0 (/home/ishaan/IITBDV-msgs/install/dv_msgs/share/dv_msgs/cmake)
 -- Found Open3D: /usr/lib/x86_64-linux-gnu/cmake/Open3D/Open3DConfig.cmake (found version "0.14.1")
-[33mCMake Warning (dev) at CMakeLists.txt:23 (find_package):
-  Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
-  Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
-  command to set the policy and suppress this warning.
-
-  CMake variable PCL_ROOT is set to:
-
-    /usr
-
-  For compatibility, CMake is ignoring the variable.
-This warning is for project developers.  Use -Wno-dev to suppress it.
-[0m
 -- Using ONNX Runtime from: /usr/local/onnxruntime-linux-x64-1.17.1
--- Configuring done (2.8s)
+-- Configuring done (3.0s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/ishaan/Desktop/DebugFInal/build/perception_winter
-[ 11%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/cone_seen_visual_node.cpp.o[0m
-[ 22%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/main_1.cpp.o[0m
-[ 33%] [32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.o[0m
-[ 44%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o[0m
-[ 55%] [32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_main.cpp.o[0m
-[ 66%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/main.cpp.o[0m
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:[m[K In member function ‘[01m[Kstd::vector<std::vector<std::array<double, 4> > > perception_winter::ClusterProcessor::filterClustersBySize(const std::vector<std::vector<std::array<double, 4> > >&, std::vector<bool, std::allocator<bool> >&, rclcpp::Logger)[m[K’:
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:514:16:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kcentroid_y[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
-  514 |         double [01;35m[Kcentroid_y[m[K = sum_y / cluster.size();
-      |                [01;35m[K^~~~~~~~~~[m[K
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:474:75:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Klogger[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
-  474 |                                                            [01;35m[Krclcpp::Logger logger[m[K) {
-      |                                                            [01;35m[K~~~~~~~~~~~~~~~^~~~~~[m[K
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:[m[K In member function ‘[01m[Kvoid perception_winter::ClusterProcessor::detectConesInClusters(const std::vector<std::vector<std::array<double, 4> > >&, const std::vector<bool, std::allocator<bool> >&, std::vector<std::array<double, 3> >&, std::vector<int>&, perception_winter::ConeClassifier&, perception_winter::HeuristicClassifier&, rclcpp::Logger)[m[K’:
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:550:60:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Klogger[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
-  550 |                                             [01;35m[Krclcpp::Logger logger[m[K) {
-      |                                             [01;35m[K~~~~~~~~~~~~~~~^~~~~~[m[K
-[ 77%] [1m[32mLinking CXX executable cone_visualizer_node[0m
-[ 88%] [1m[32mLinking CXX executable filtered_points_node[0m
-[ 88%] [0mBuilt target cone_visualizer_node[0m
-[ 88%] [0mBuilt target filtered_points_node[0m
+[  8%] [32mBuilding CXX object CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer_main.cpp.o[0m
+[ 16%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/main_1.cpp.o[0m
+[ 33%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o[0m
+[ 33%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/cone_seen_visual_node.cpp.o[0m
+[ 58%] [32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.o[0m
+[ 58%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/main.cpp.o[0m
+[ 58%] [32mBuilding CXX object CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer.cpp.o[0m
+[ 66%] [32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_main.cpp.o[0m
+[ 75%] [1m[32mLinking CXX executable lidar_clusters_visualizer_node[0m
+[ 83%] [1m[32mLinking CXX executable cone_visualizer_node[0m
+[ 91%] [1m[32mLinking CXX executable filtered_points_node[0m
+[ 91%] [0mBuilt target lidar_clusters_visualizer_node[0m
+[ 91%] [0mBuilt target cone_visualizer_node[0m
+[ 91%] [0mBuilt target filtered_points_node[0m
 [100%] [1m[32mLinking CXX executable process_lidar_node[0m
 [100%] [0mBuilt target process_lidar_node[0m
 -- Install configuration: ""
@@ -194,9 +101,12 @@ This warning is for project developers.  Use -Wno-dev to suppress it.
 -- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/cone_visualizer_node" to ""
 -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/filtered_points_node
 -- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/filtered_points_node" to ""
+-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/lidar_clusters_visualizer_node
+-- Set non-toolchain portion of runtime path of "/home/ishaan/Desktop/DebugFInal/install/perception_winter/lib/perception_winter/lidar_clusters_visualizer_node" to ""
 -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include
 -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter
 -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/process_lidar.hpp
+-- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/lidar_clusters_visualizer.hpp
 -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/filtered_points_visual_node.hpp
 -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp
 -- Installing: /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx
