@@ -191,6 +191,7 @@ process_lidar_node: /usr/lib/x86_64-linux-gnu/libusb-1.0.so
 process_lidar_node: /usr/lib/x86_64-linux-gnu/libflann_cpp.so
 process_lidar_node: /usr/lib/x86_64-linux-gnu/libOpen3D.so.0.14.1
 process_lidar_node: /usr/local/onnxruntime-linux-x64-1.17.1/lib/libonnxruntime.so
+process_lidar_node: /usr/lib/x86_64-linux-gnu/libyaml-cpp.so.0.7.0
 process_lidar_node: /opt/ros/humble/lib/librmw_implementation.so
 process_lidar_node: /opt/ros/humble/lib/libament_index_cpp.so
 process_lidar_node: /opt/ros/humble/lib/librcl_logging_spdlog.so

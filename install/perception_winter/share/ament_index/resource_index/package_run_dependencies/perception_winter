@@ -1,1 +1,1 @@
-rclcpp;sensor_msgs;visualization_msgs;std_msgs;dv_msgs;pcl_conversions;onnxruntime;libopen3d-dev;libeigen3-dev;libpcl-dev;ament_lint_auto;ament_lint_common
+rclcpp;sensor_msgs;visualization_msgs;std_msgs;dv_msgs;pcl_conversions;onnxruntime;yaml-cpp;libopen3d-dev;libeigen3-dev;libpcl-dev;ament_lint_auto;ament_lint_common

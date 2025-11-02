@@ -143,6 +143,10 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/perception_winter" TYPE DIRECTORY FILES "/home/ishaan/Desktop/DebugFInal/src/perception_winter/config/")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/perception_winter" TYPE FILE FILES "/home/ishaan/Desktop/DebugFInal/src/perception_winter/cone_model.onnx")
 endif()
 

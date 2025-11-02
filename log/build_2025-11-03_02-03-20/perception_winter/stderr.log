@@ -72,7 +72,7 @@ Call Stack (most recent call first):
   CMakeLists.txt:17 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 [0m
-[33mCMake Warning (dev) at CMakeLists.txt:23 (find_package):
+[33mCMake Warning (dev) at CMakeLists.txt:26 (find_package):
   Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
   Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
   command to set the policy and suppress this warning.
@@ -84,14 +84,3 @@ This warning is for project developers.  Use -Wno-dev to suppress it.
   For compatibility, CMake is ignoring the variable.
 This warning is for project developers.  Use -Wno-dev to suppress it.
 [0m
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:[m[K In member function ‘[01m[Kstd::vector<std::vector<std::array<double, 4> > > perception_winter::ClusterProcessor::filterClustersBySize(const std::vector<std::vector<std::array<double, 4> > >&, std::vector<bool, std::allocator<bool> >&, rclcpp::Logger)[m[K’:
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:514:16:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kcentroid_y[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
-  514 |         double [01;35m[Kcentroid_y[m[K = sum_y / cluster.size();
-      |                [01;35m[K^~~~~~~~~~[m[K
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:474:75:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Klogger[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
-  474 |                                                            [01;35m[Krclcpp::Logger logger[m[K) {
-      |                                                            [01;35m[K~~~~~~~~~~~~~~~^~~~~~[m[K
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:[m[K In member function ‘[01m[Kvoid perception_winter::ClusterProcessor::detectConesInClusters(const std::vector<std::vector<std::array<double, 4> > >&, const std::vector<bool, std::allocator<bool> >&, std::vector<std::array<double, 3> >&, std::vector<int>&, perception_winter::ConeClassifier&, perception_winter::HeuristicClassifier&, rclcpp::Logger)[m[K’:
-[01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:550:60:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Klogger[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
-  550 |                                             [01;35m[Krclcpp::Logger logger[m[K) {
-      |                                             [01;35m[K~~~~~~~~~~~~~~~^~~~~~[m[K

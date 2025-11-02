@@ -29,65 +29,6 @@ namespace pcl {
 namespace perception_winter {
 
 // =============================================
-// CONSTANTS CONFIGURATION
-// =============================================
-
-/**
- * @brief Centralized constants for LiDAR processing parameters
- * @note All values are optimized for performance and accuracy
- */
-namespace lidar_constants {
-    // Topic Configuration
-    constexpr auto LIDAR_RAW_TOPIC = "/carmaker/pointcloud";
-    constexpr auto LIDAR_RAW_TOPIC2 = "/velodyne_points";
-
-    // Ground Removal Parameters (Optimized for RANSAC)
-    constexpr double RANSAC_THRESHOLD = 0.015;
-    constexpr double MIN_Z_NORMAL_COMPONENT = 0.80;
-    constexpr double MAX_SLOPE_DEVIATION_DEG = 40.0;
-    constexpr int MAX_GROUND_ITERATIONS = 8;
-    constexpr size_t MIN_POINTS_FOR_PLANE = 150;
-
-    // Clustering Parameters (Optimized for DBSCAN)
-    constexpr double DBSCAN_EPSILON = 0.20;
-    constexpr int DBSCAN_MINPOINTS = 3;
-
-    // Region of Interest (ROI) Boundaries
-    constexpr double ROI_Y_MIN = -3.50;
-    constexpr double ROI_Y_MAX = 3.50;
-    constexpr double ROI_Z_MIN = -0.63;
-    constexpr double ROI_Z_MAX = 0.40;
-    constexpr double ROI_X_MAX = 12.0;  // Optimized from second code
-
-    // Vehicle Body Exclusion Zone
-    constexpr double CAR_FRONT_X = 1.15;
-    constexpr double CAR_SIDE_Y = 1.25;
-
-    // Cone Physical Properties
-    constexpr double CONE_BASE_RADIUS = 0.12;
-    constexpr double LIDAR_OFFSET = 1.532;
-    constexpr double CONE_HEIGHT = 0.1629;
-
-    // ML Model Configuration
-    constexpr int NUM_BINS = 10;
-    constexpr int FEATURE_SIZE = 20;
-    constexpr float Z_MIN = -0.640f;
-    constexpr float Z_MAX = -0.300f;
-    constexpr float BIN_WIDTH = (Z_MAX - Z_MIN) / NUM_BINS;
-    constexpr double CONFIDENCE_THRESHOLD = 0.95;
-
-    // Cluster Filtering Parameters (Optimized from second code)
-    constexpr double MIN_CLUSTER_HEIGHT = 0.15;
-    constexpr double MAX_CLUSTER_HEIGHT = 0.60;
-    constexpr double MAX_CLUSTER_WIDTH = 0.75;
-    constexpr int MIN_CLUSTER_POINTS = 4;
-
-    // Orange Cone Detection
-    constexpr double ORANGE_CONE_DISTANCE_THRESHOLD = 10.0;
-    constexpr int ORANGE_CONE_MIN_POINTS = 20;
-}
-
-// =============================================
 // TYPE ALIASES FOR CODE CLARITY
 // =============================================
 
@@ -95,6 +36,87 @@ using Point4D = std::array<double, 4>; // x, y, z, intensity
 using Point3D = std::array<double, 3>; // x, y, z
 using Cluster = std::vector<Point4D>;
 using PointCloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr;
+
+// =============================================
+// LIDAR CONSTANTS CONFIGURATION STRUCTURE
+// =============================================
+
+/**
+ * @brief Centralized configuration structure for LiDAR processing parameters
+ * @note All values are loaded from YAML config file for runtime flexibility
+ */
+struct LidarConfig {
+    // Topic Configuration
+    std::string lidar_raw_topic;
+    std::string lidar_raw_topic2;
+    
+    // Ground Removal Parameters (Optimized for RANSAC)
+    double ransac_threshold;
+    double min_z_normal_component;
+    double max_slope_deviation_deg;
+    int max_ground_iterations;
+    size_t min_points_for_plane;
+    
+    // Clustering Parameters (Optimized for DBSCAN)
+    double dbscan_epsilon;
+    int dbscan_minpoints;
+    
+    // Region of Interest (ROI) Boundaries
+    double roi_y_min;
+    double roi_y_max;
+    double roi_z_min;
+    double roi_z_max;
+    double roi_x_max;  // Optimized from second code
+    
+    // Vehicle Body Exclusion Zone
+    double car_front_x;
+    double car_side_y;
+    
+    // Cone Physical Properties
+    double cone_base_radius;
+    double lidar_offset;
+    double cone_height;
+    
+    // ML Model Configuration
+    int num_bins;
+    int feature_size;
+    float z_min;
+    float z_max;
+    float bin_width;
+    double confidence_threshold;
+    
+    // Cluster Filtering Parameters (Optimized from second code)
+    double min_cluster_height;
+    double max_cluster_height;
+    double max_cluster_width;
+    size_t min_cluster_points;
+    
+    // Orange Cone Detection
+    double orange_cone_distance_threshold;
+    size_t orange_cone_min_points;
+    
+    // Visualization Control
+    bool publish_cluster_centers;
+    bool publish_filtered_points;
+    
+    // ONNX Model Configuration
+    std::vector<std::string> onnx_model_paths;
+    std::string default_model_path;
+    
+    // Cone Detection Parameters
+    double cone_distance_x_min;
+    double cone_distance_x_max;
+    double intensity_threshold_blue;
+    
+    // Cone Position Calculation Weights
+    double cone_position_w_median;
+    double cone_position_w_min_x;
+    double cone_position_w_min_y;
+    
+    // Heuristic Classifier Parameters
+    double moving_average_factor;
+    int min_kernel_size;
+};
 
 // =============================================
 // ACCURACY METRICS TRACKING
@@ -133,7 +155,7 @@ public:
  */
 class ConeClassifier {
 public:
-    explicit ConeClassifier(Ort::Env& env);
+    ConeClassifier(Ort::Env& env, const LidarConfig& config);
     ~ConeClassifier() = default;
 
     // Non-copyable, non-movable
@@ -146,7 +168,7 @@ public:
     std::optional<int> classify(const Cluster& cluster);
 
     // Getters for configuration
-    double getConfidenceThreshold() const { return confidence_threshold_; }
+    double getConfidenceThreshold() const { return config_.confidence_threshold; }
 
 private:
     std::vector<float> createFeatureVector(const Cluster& cluster) const;
@@ -156,7 +178,7 @@ private:
     std::vector<std::string> input_node_names_;
     std::vector<std::string> output_node_names_;
     std::vector<int64_t> input_node_dims_;
-    double confidence_threshold_ = lidar_constants::CONFIDENCE_THRESHOLD;
+    const LidarConfig& config_;
 };
 
 // =============================================
@@ -169,7 +191,7 @@ private:
  */
 class HeuristicClassifier {
 public:
-    HeuristicClassifier() = default;
+    HeuristicClassifier(const LidarConfig& config);
     ~HeuristicClassifier() = default;
 
     // Non-copyable, non-movable
@@ -183,6 +205,8 @@ public:
 private:
     bool classifyCone(const std::vector<double> &y_vals, const std::vector<double> &x_vals);
     std::vector<double> movingAverage(const std::vector<double> &data, int kernel);
+    
+    const LidarConfig& config_;
 };
 
 // =============================================
@@ -195,7 +219,7 @@ private:
  */
 class PointCloudProcessor {
 public:
-    PointCloudProcessor() = default;
+    PointCloudProcessor(const LidarConfig& config);
     ~PointCloudProcessor() = default;
 
     // Non-copyable, non-movable
@@ -215,6 +239,8 @@ public:
 private:
     bool isValidGroundPlane(const Eigen::Vector3f& normal, 
                           const std::optional<Eigen::Vector3f>& reference_normal) const;
+    
+    const LidarConfig& config_;
 };
 
 // =============================================
@@ -227,7 +253,7 @@ private:
  */
 class ClusterProcessor {
 public:
-    ClusterProcessor() = default;
+    ClusterProcessor(const LidarConfig& config);
     ~ClusterProcessor() = default;
 
     // Non-copyable, non-movable
@@ -259,6 +285,8 @@ private:
     Point3D calculateConePosition(const Cluster& cluster);
     double getMedian(const Cluster& points, size_t idx) const;
     bool isOrangeConeCandidate(const Cluster& cluster) const;
+    
+    const LidarConfig& config_;
 };
 
 // =============================================
@@ -313,6 +341,7 @@ private:
     void initializeComponents();
     void loadONNXModel();
     bool validateComponents() const;
+    void loadLidarConfig();
 
     // Publication Methods
     void publishDetectedCones(const std::vector<Point3D>& positions, const std::vector<int>& colors);
@@ -338,13 +367,12 @@ private:
     // ONNX Runtime Environment
     Ort::Env env_;
 
+    // Configuration
+    LidarConfig lidar_config_;
+
     // Performance Monitoring
     std::atomic<long long> total_processed_frames_{0};
     std::atomic<long long> failed_processing_attempts_{0};
-
-    // Visualization control parameters
-    bool publish_cluster_centers_ = true; // Control flag for cluster centers visualization
-    bool publish_filtered_points_ = true; // Control flag for filtered points visualization
 };
 
 } // namespace perception_winter

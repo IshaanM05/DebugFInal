@@ -17,6 +17,9 @@ find_package(std_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(dv_msgs REQUIRED)
 
+# Find yaml-cpp for YAML configuration parsing
+find_package(yaml-cpp REQUIRED)
+
 # Find third-party libraries
 find_package(Open3D REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -71,6 +74,7 @@ target_include_directories(process_lidar_node PUBLIC
   ${Open3D_INCLUDE_DIRS}
   ${Eigen3_INCLUDE_DIRS}
   "${ONNXRUNTIME_DIR}/include"
+  ${yaml-cpp_INCLUDE_DIRS}  # Add yaml-cpp includes
 )
 target_link_libraries(process_lidar_node
   ${ament_cmake_libraries}
@@ -78,6 +82,7 @@ target_link_libraries(process_lidar_node
   Open3D::Open3D 
   Eigen3::Eigen 
   ${ONNXRUNTIME_LIB}
+  yaml-cpp  # Link yaml-cpp library
 )
 
 # --- Cone Visualizer Node ---
@@ -126,6 +131,11 @@ install(TARGETS
 )
 
 install(DIRECTORY include/ DESTINATION include)
+
+# Install the config directory with the YAML file
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}
+)
 
 set(MODEL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cone_model.onnx")
 if(EXISTS ${MODEL_FILE})

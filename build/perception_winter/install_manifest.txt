@@ -6,6 +6,7 @@
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/lidar_clusters_visualizer.hpp
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/filtered_points_visual_node.hpp
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/include/perception_winter/cone_seen_visual_node.hpp
+/home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/perception_config.yaml
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/package_run_dependencies/perception_winter
 /home/ishaan/Desktop/DebugFInal/install/perception_winter/share/ament_index/resource_index/parent_prefix_path/perception_winter

@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <chrono>
 #include <atomic>
+#include <yaml-cpp/yaml.h>
 
 using namespace perception_winter;
 
@@ -28,7 +29,7 @@ static std::atomic<long long> g_rejected_as_yellow{0};     // Was Yellow, but re
 // ML CLASSIFIER IMPLEMENTATION
 // =============================================
 
-ConeClassifier::ConeClassifier(Ort::Env& env) : env_(env) {}
+ConeClassifier::ConeClassifier(Ort::Env& env, const LidarConfig& config) : env_(env), config_(config) {}
 
 bool ConeClassifier::initialize(const std::string& model_path) {
     try {
@@ -55,7 +56,7 @@ bool ConeClassifier::initialize(const std::string& model_path) {
 
         RCLCPP_INFO(rclcpp::get_logger("cone_classifier"), 
                    "ML Classifier initialized successfully with confidence threshold: %.2f", 
-                   confidence_threshold_);
+                   config_.confidence_threshold);
         return true;
     } 
     catch (const Ort::Exception& e) {
@@ -71,7 +72,7 @@ bool ConeClassifier::initialize(const std::string& model_path) {
 }
 
 std::vector<float> ConeClassifier::createFeatureVector(const Cluster& cluster) const {
-    std::vector<float> feature_vector(lidar_constants::NUM_BINS * 2, 0.0f);
+    std::vector<float> feature_vector(config_.num_bins * 2, 0.0f);
     if (cluster.empty()) return feature_vector;
 
     // Calculate normalization parameters
@@ -87,18 +88,18 @@ std::vector<float> ConeClassifier::createFeatureVector(const Cluster& cluster) c
 
     double z_range = max_z - min_z;
     double intensity_range = max_intensity - min_intensity;
-    double bin_width = (z_range > 1e-6) ? z_range / lidar_constants::NUM_BINS : 0.0;
+    double bin_width = (z_range > 1e-6) ? z_range / config_.num_bins : 0.0;
 
     // Bin points and calculate statistics
-    std::vector<double> sum_intensity(lidar_constants::NUM_BINS, 0.0);
-    std::vector<int> point_count(lidar_constants::NUM_BINS, 0);
+    std::vector<double> sum_intensity(config_.num_bins, 0.0);
+    std::vector<int> point_count(config_.num_bins, 0);
 
     for (const auto& point : cluster) {
         double norm_intensity = (intensity_range > 1e-6) ? 
                                (point[3] - min_intensity) / intensity_range : 0.0;
         int bin_index = (bin_width > 0) ? 
                        static_cast<int>((point[2] - min_z) / bin_width) : 0;
-        bin_index = std::min(bin_index, lidar_constants::NUM_BINS - 1);
+        bin_index = std::min(bin_index, config_.num_bins - 1);
         
         sum_intensity[bin_index] += norm_intensity;
         point_count[bin_index]++;
@@ -110,7 +111,7 @@ std::vector<float> ConeClassifier::createFeatureVector(const Cluster& cluster) c
     float max_c = static_cast<float>(*min_max_it.second);
     float count_range = max_c - min_c;
 
-    for (int i = 0; i < lidar_constants::NUM_BINS; ++i) {
+    for (int i = 0; i < config_.num_bins; ++i) {
         // Normalized point count
         float normalized_count = 0.0f;
         if (count_range > 0) {
@@ -165,9 +166,9 @@ std::optional<int> ConeClassifier::classify(const Cluster& cluster) {
         float prediction_prob = *output_tensors[0].GetTensorMutableData<float>();
 
         // Apply confidence thresholding
-        if (prediction_prob > confidence_threshold_) {
+        if (prediction_prob > config_.confidence_threshold) {
             return dv_msgs::msg::IndexedCone::BLUE;
-        } else if ((1.0 - prediction_prob) > confidence_threshold_) {
+        } else if ((1.0 - prediction_prob) > config_.confidence_threshold) {
             return dv_msgs::msg::IndexedCone::YELLOW;
         }
         
@@ -183,6 +184,8 @@ std::optional<int> ConeClassifier::classify(const Cluster& cluster) {
 // =============================================
 // HEURISTIC CLASSIFIER IMPLEMENTATION
 // =============================================
+
+HeuristicClassifier::HeuristicClassifier(const LidarConfig& config) : config_(config) {}
 
 bool HeuristicClassifier::classifyCone(const std::vector<double> &y_vals, const std::vector<double> &x_vals) {
     if (y_vals.size() < 3) return false;
@@ -242,7 +245,7 @@ std::optional<int> HeuristicClassifier::classify(const Cluster& cluster) {
         }
 
         // Apply smoothing for noise reduction
-        int kernel = std::max(3, static_cast<int>(0.1 * intensity_vals.size()));
+        int kernel = std::max(config_.min_kernel_size, static_cast<int>(config_.moving_average_factor * intensity_vals.size()));
         if (kernel % 2 == 0) kernel += 1;
         std::vector<double> averaged_intensities = this->movingAverage(intensity_vals, kernel);
         
@@ -260,6 +263,8 @@ std::optional<int> HeuristicClassifier::classify(const Cluster& cluster) {
 // =============================================
 // POINT CLOUD PROCESSOR IMPLEMENTATION
 // =============================================
+
+PointCloudProcessor::PointCloudProcessor(const LidarConfig& config) : config_(config) {}
 
 bool PointCloudProcessor::filterCarBodyAndROI(const std::vector<Point4D>& input_points, 
                                               PointCloudPtr output_cloud,
@@ -290,16 +295,16 @@ bool PointCloudProcessor::filterCarBodyAndROI(const std::vector<Point4D>& input_
         }
         
         // Skip points that are on the car body (primary exclusion)
-        bool on_car_body = (x <= lidar_constants::CAR_FRONT_X) && 
-                          (std::abs(y) <= lidar_constants::CAR_SIDE_Y);
+        bool on_car_body = (x <= config_.car_front_x) && 
+                          (std::abs(y) <= config_.car_side_y);
         if (on_car_body) {
             car_body_points++;
             continue;
         }
         
         // Apply ROI filtering (secondary validation)
-        bool in_roi_y = (y >= lidar_constants::ROI_Y_MIN) && (y <= lidar_constants::ROI_Y_MAX);
-        bool in_roi_z = (z >= lidar_constants::ROI_Z_MIN) && (z <= lidar_constants::ROI_Z_MAX);
+        bool in_roi_y = (y >= config_.roi_y_min) && (y <= config_.roi_y_max);
+        bool in_roi_z = (z >= config_.roi_z_min) && (z <= config_.roi_z_max);
         
         if (in_roi_y && in_roi_z) {
             pcl::PointXYZI pcl_point;
@@ -341,7 +346,7 @@ bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setDistanceThreshold(lidar_constants::RANSAC_THRESHOLD);
+    seg.setDistanceThreshold(config_.ransac_threshold);
 
     auto remaining_cloud = cloud;
     auto ground_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
@@ -350,11 +355,11 @@ bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
     int iterations = 0;
 
     // Iterative ground plane removal
-    while (remaining_cloud->size() > lidar_constants::MIN_POINTS_FOR_PLANE && 
-           iterations < lidar_constants::MAX_GROUND_ITERATIONS) {
+    while (remaining_cloud->size() > config_.min_points_for_plane && 
+           iterations < config_.max_ground_iterations) {
         
         int dynamic_max_iter = std::min(static_cast<int>(remaining_cloud->size() / 200), 
-                                       lidar_constants::MAX_GROUND_ITERATIONS);
+                                       config_.max_ground_iterations);
         if (iterations >= dynamic_max_iter) break;
 
         seg.setInputCloud(remaining_cloud);
@@ -399,14 +404,14 @@ bool PointCloudProcessor::removeGroundPlane(PointCloudPtr cloud,
 bool PointCloudProcessor::isValidGroundPlane(const Eigen::Vector3f& normal, 
                                             const std::optional<Eigen::Vector3f>& reference_normal) const {
     // Check normal orientation
-    if (normal.z() < lidar_constants::MIN_Z_NORMAL_COMPONENT) return false;
+    if (normal.z() < config_.min_z_normal_component) return false;
 
     // Check consistency with reference normal
     if (reference_normal.has_value()) {
         double dot_product = normal.dot(reference_normal.value());
         double angle_rad = std::acos(std::clamp(dot_product, -1.0, 1.0));
         double angle_deg = angle_rad * (180.0 / M_PI);
-        if (angle_deg > lidar_constants::MAX_SLOPE_DEVIATION_DEG) return false;
+        if (angle_deg > config_.max_slope_deviation_deg) return false;
     }
 
     return true;
@@ -415,6 +420,8 @@ bool PointCloudProcessor::isValidGroundPlane(const Eigen::Vector3f& normal,
 // =============================================
 // CLUSTER PROCESSOR IMPLEMENTATION
 // =============================================
+
+ClusterProcessor::ClusterProcessor(const LidarConfig& config) : config_(config) {}
 
 std::vector<Cluster> ClusterProcessor::clusterPoints(const PointCloudPtr cloud, rclcpp::Logger logger) {
     if (cloud->empty()) {
@@ -432,8 +439,8 @@ std::vector<Cluster> ClusterProcessor::clusterPoints(const PointCloudPtr cloud, 
             o3d_pcd->points_.emplace_back(point.x, point.y, point.z);
         }
 
-        auto labels = o3d_pcd->ClusterDBSCAN(lidar_constants::DBSCAN_EPSILON, 
-                                            lidar_constants::DBSCAN_MINPOINTS, false);
+        auto labels = o3d_pcd->ClusterDBSCAN(config_.dbscan_epsilon, 
+                                            config_.dbscan_minpoints, false);
         
         int max_label = 0;
         if (!labels.empty()) {
@@ -482,13 +489,13 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
     int rejected_by_points = 0;
     int rejected_by_height = 0;
     int rejected_by_width = 0;
-    int rejected_by_x_dist = 0; // Counter for the new filter
+    int rejected_by_x_dist = 0;
 
     for (const auto& cluster : clusters) {
         total_points_before += cluster.size();
         
         // Minimum points check
-        if (cluster.size() < lidar_constants::MIN_CLUSTER_POINTS) {
+        if (cluster.size() < config_.min_cluster_points) {
             rejected_by_points++;
             orange_candidates.push_back(false);
             continue;
@@ -498,29 +505,29 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
         double min_x = cluster[0][0], max_x = cluster[0][0];
         double min_y = cluster[0][1], max_y = cluster[0][1];
         double min_z = cluster[0][2], max_z = cluster[0][2];
-        double sum_x = 0.0, sum_y = 0.0;
+        double sum_x = 0.0; // Removed sum_y since centroid_y is unused
 
         for (const auto& point : cluster) {
             min_x = std::min(min_x, point[0]); max_x = std::max(max_x, point[0]);
             min_y = std::min(min_y, point[1]); max_y = std::max(max_y, point[1]);
             min_z = std::min(min_z, point[2]); max_z = std::max(max_z, point[2]);
             sum_x += point[0];
-            sum_y += point[1];
+            // Removed: sum_y += point[1]; since centroid_y is unused
         }
 
         double height = max_z - min_z;
         double width = std::max(max_x - min_x, max_y - min_y);
         double centroid_x = sum_x / cluster.size();
-        double centroid_y = sum_y / cluster.size();
+        // Removed unused centroid_y variable
 
         // Check for orange cone candidate during filtering
         bool is_orange_candidate = isOrangeConeCandidate(cluster);
         orange_candidates.push_back(is_orange_candidate);
 
         // Regular cone filtering
-        bool valid_height = (height >= lidar_constants::MIN_CLUSTER_HEIGHT && height <= lidar_constants::MAX_CLUSTER_HEIGHT);
-        bool valid_width = (width <= lidar_constants::MAX_CLUSTER_WIDTH);
-        bool valid_x_pos = (centroid_x <= lidar_constants::ROI_X_MAX);
+        bool valid_height = (height >= config_.min_cluster_height && height <= config_.max_cluster_height);
+        bool valid_width = (width <= config_.max_cluster_width);
+        bool valid_x_pos = (centroid_x <= config_.roi_x_max);
 
         if (!valid_height) rejected_by_height++;
         if (!valid_width) rejected_by_width++;
@@ -532,7 +539,7 @@ std::vector<Cluster> ClusterProcessor::filterClustersBySize(const std::vector<Cl
         }
     }
 
-    RCLCPP_INFO(rclcpp::get_logger("cluster_processor"),
+    RCLCPP_INFO(logger,  // Use the passed logger parameter
                 "Cluster filtering: %zu -> %zu clusters, points: %d -> %d "
                 "(rejected: points=%d, height=%d, width=%d, x_dist=%d)",
                 clusters.size(), valid_clusters.size(), total_points_before, total_points_after,
@@ -547,7 +554,7 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
                                             std::vector<int>& colors,
                                             ConeClassifier& ml_classifier,
                                             HeuristicClassifier& heuristic_classifier,
-                                            rclcpp::Logger logger) {
+                                            rclcpp::Logger logger) {  // Use this logger parameter
     positions.reserve(clusters.size());
     colors.reserve(clusters.size());
 
@@ -558,7 +565,7 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
         const auto& cluster = clusters[i];
         if (cluster.empty()) continue;
 
-        // --- 1. Handle Orange Cones (Assumed correct, not part of Blue/Yellow metrics) ---
+        // --- 1. Handle Orange Cones ---
         if (orange_candidates[i]) {
             auto cone_pos = calculateConePosition(cluster);
             positions.push_back(cone_pos);
@@ -571,22 +578,20 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
         // --- 2. Determine Ground Truth from Simulator Intensity ---
         double total_intensity = 0.0;
         for (const auto& point : cluster) {
-            total_intensity += point[3]; // Intensity is the 4th element
+            total_intensity += point[3];
         }
         double avg_intensity = total_intensity / cluster.size();
         
-        // Assumption: Simulator uses very high intensity for blue cones.
-        bool is_ground_truth_blue = (avg_intensity > 1e6);
+        bool is_ground_truth_blue = (avg_intensity > config_.intensity_threshold_blue);
 
         // --- 3. Get Predictions from Both Classifiers ---
         auto heuristic_color_opt = heuristic_classifier.classify(cluster);
         auto ml_color_opt = ml_classifier.classify(cluster);
 
         // --- 4. Compare and Update Metrics ---
-        int final_color = -1; // -1 indicates no decision
+        int final_color = -1;
 
         if (ml_color_opt.has_value() && heuristic_color_opt.has_value()) {
-            // Decision Rule: Only accept if both classifiers agree.
             if (ml_color_opt.value() == heuristic_color_opt.value()) {
                 final_color = ml_color_opt.value();
                 auto cone_pos = calculateConePosition(cluster);
@@ -597,24 +602,23 @@ void ClusterProcessor::detectConesInClusters(const std::vector<Cluster>& cluster
                 // Update True/False Positive counters
                 if (final_color == dv_msgs::msg::IndexedCone::BLUE) {
                     if (is_ground_truth_blue) g_true_positives_blue++;
-                    else g_false_positives_blue++; // Predicted Blue, was Yellow
-                } else { // Predicted Yellow
+                    else g_false_positives_blue++;
+                } else {
                     if (!is_ground_truth_blue) g_true_positives_yellow++;
-                    else g_false_positives_yellow++; // Predicted Yellow, was Blue
+                    else g_false_positives_yellow++;
                 }
             }
         }
         
         // --- 5. Handle Rejections ---
         if (final_color == -1) {
-            // If no decision was made (disagreement, low confidence, etc.)
             if (is_ground_truth_blue) g_rejected_as_blue++;
             else g_rejected_as_yellow++;
         }
     }
 
-    // Update the log to show the count of accepted cones only
-    RCLCPP_INFO(rclcpp::get_logger("cluster_processor"), 
+    // Use the passed logger parameter
+    RCLCPP_INFO(logger, 
                 "Cone detection: Accepted cones (ML+Heuristic agreement): %d, Orange cones: %d",
                 accepted_cones, orange_cones);
 }
@@ -661,15 +665,11 @@ Point3D ClusterProcessor::calculateConePosition(const Cluster& cluster) {
     double median_x = getMedian(cluster, 0);
     double median_y = getMedian(cluster, 1);
 
-    // Weighted combination for robust position estimation
-    constexpr double w_median = 0.7;
-    constexpr double w_min_x = 0.3;
-    constexpr double w_min_y = 0.3;
+    // Weighted combination for robust position estimation using config weights
+    double cone_x = config_.cone_position_w_median * median_x + config_.cone_position_w_min_x * (min_x + config_.cone_base_radius);
+    double cone_y = config_.cone_position_w_median * median_y + config_.cone_position_w_min_y * (min_y + config_.cone_base_radius);
 
-    double cone_x = w_median * median_x + w_min_x * (min_x + lidar_constants::CONE_BASE_RADIUS);
-    double cone_y = w_median * median_y + w_min_y * (min_y + lidar_constants::CONE_BASE_RADIUS);
-
-    return {cone_x, cone_y, lidar_constants::CONE_HEIGHT};
+    return {cone_x, cone_y, config_.cone_height};
 }
 
 double ClusterProcessor::getMedian(const Cluster& points, size_t idx) const {
@@ -694,7 +694,7 @@ double ClusterProcessor::getMedian(const Cluster& points, size_t idx) const {
 }
 
 bool ClusterProcessor::isOrangeConeCandidate(const Cluster& cluster) const {
-    if (cluster.size() < lidar_constants::ORANGE_CONE_MIN_POINTS) {
+    if (cluster.size() < config_.orange_cone_min_points) {  // Now both are size_t
         return false;
     }
 
@@ -708,7 +708,7 @@ bool ClusterProcessor::isOrangeConeCandidate(const Cluster& cluster) const {
     double centroid_y = sum_y / cluster.size();
     double distance = std::sqrt(centroid_x * centroid_x + centroid_y * centroid_y);
 
-    return (distance > lidar_constants::ORANGE_CONE_DISTANCE_THRESHOLD);
+    return (distance > config_.orange_cone_distance_threshold);
 }
 
 std::vector<Point3D> ClusterProcessor::calculateClusterCenters(const std::vector<Cluster>& clusters) const {
@@ -837,23 +837,22 @@ ProcessLidar::ProcessLidar() :
     auto result = rcutils_logging_set_logger_level(debug_logger.get_name(), RCUTILS_LOG_SEVERITY_DEBUG);
     (void)result;
 
-    // Declare visualization control parameters
-    this->declare_parameter<bool>("publish_cluster_centers", true);
-    this->declare_parameter<bool>("publish_filtered_points", true);
-    
+    // Load configuration first
+    loadLidarConfig();
+
     // Initialize modular components
     initializeComponents();
     
     // Dual input subscribers for redundancy
     lidar_raw_input_sub_ = create_subscription<sensor_msgs::msg::PointCloud>(
-        lidar_constants::LIDAR_RAW_TOPIC, rclcpp::SensorDataQoS(),
+        lidar_config_.lidar_raw_topic, rclcpp::SensorDataQoS(),
         [this](const sensor_msgs::msg::PointCloud::SharedPtr msg) {
             RCLCPP_DEBUG(this->get_logger(), "Received PointCloud with %zu points", msg->points.size());
             lidarRawCallback(msg);
         });
 
     lidar_raw_input_sub2_ = create_subscription<sensor_msgs::msg::PointCloud2>(
-        lidar_constants::LIDAR_RAW_TOPIC2, rclcpp::SensorDataQoS(),
+        lidar_config_.lidar_raw_topic2, rclcpp::SensorDataQoS(),
         [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
             RCLCPP_DEBUG(this->get_logger(), "Received PointCloud2 with %dx%d points", msg->width, msg->height);
             lidarRawCallback2(msg);
@@ -866,7 +865,7 @@ ProcessLidar::ProcessLidar() :
 
     RCLCPP_INFO(get_logger(), "=== MODULAR LIDAR PROCESSING NODE STARTED ===");
     RCLCPP_INFO(get_logger(), "Dual input topics: %s, %s", 
-                lidar_constants::LIDAR_RAW_TOPIC, lidar_constants::LIDAR_RAW_TOPIC2);
+                lidar_config_.lidar_raw_topic.c_str(), lidar_config_.lidar_raw_topic2.c_str());
     RCLCPP_INFO(get_logger(), "Output topic: /perception/cones");
     RCLCPP_INFO(get_logger(), "Filtered points visualization topic: /perception/filtered_points");
     RCLCPP_INFO(get_logger(), "Cluster centers visualization topic: /perception/clusters");
@@ -930,12 +929,106 @@ ProcessLidar::~ProcessLidar() {
     RCLCPP_INFO(get_logger(), "LiDAR Node shutdown complete.");
 }
 
+void ProcessLidar::loadLidarConfig() {
+    try {
+        // Get package share directory
+        std::string package_share_directory = ament_index_cpp::get_package_share_directory("perception_winter");
+        std::string config_path = package_share_directory + "/config/perception_config.yaml";
+        
+        // Load YAML config
+        YAML::Node config = YAML::LoadFile(config_path);
+        
+        // Load lidar_only section-defaults for CarMaker
+        auto lidar_config = config["lidar_only"]["carmaker"];
+        
+        // Topic Configuration
+        lidar_config_.lidar_raw_topic = lidar_config["lidar_raw_topic"].as<std::string>();
+        lidar_config_.lidar_raw_topic2 = lidar_config["lidar_raw_topic2"].as<std::string>();
+        
+        // Ground Removal Parameters (Optimized for RANSAC)
+        lidar_config_.ransac_threshold = lidar_config["ransac_threshold"].as<double>();
+        lidar_config_.min_z_normal_component = lidar_config["min_z_normal_component"].as<double>();
+        lidar_config_.max_slope_deviation_deg = lidar_config["max_slope_deviation_deg"].as<double>();
+        lidar_config_.max_ground_iterations = lidar_config["max_ground_iterations"].as<int>();
+        lidar_config_.min_points_for_plane = lidar_config["min_points_for_plane"].as<size_t>();
+        
+        // Clustering Parameters (Optimized for DBSCAN)
+        lidar_config_.dbscan_epsilon = lidar_config["dbscan_epsilon"].as<double>();
+        lidar_config_.dbscan_minpoints = lidar_config["dbscan_minpoints"].as<int>();
+        
+        // Region of Interest (ROI) Boundaries
+        lidar_config_.roi_y_min = lidar_config["roi_y_min"].as<double>();
+        lidar_config_.roi_y_max = lidar_config["roi_y_max"].as<double>();
+        lidar_config_.roi_z_min = lidar_config["roi_z_min"].as<double>();
+        lidar_config_.roi_z_max = lidar_config["roi_z_max"].as<double>();
+        lidar_config_.roi_x_max = lidar_config["roi_x_max"].as<double>();
+        
+        // Vehicle Body Exclusion Zone
+        lidar_config_.car_front_x = lidar_config["car_front_x"].as<double>();
+        lidar_config_.car_side_y = lidar_config["car_side_y"].as<double>();
+        
+        // Cone Physical Properties
+        lidar_config_.cone_base_radius = lidar_config["cone_base_radius"].as<double>();
+        lidar_config_.lidar_offset = lidar_config["lidar_offset"].as<double>();
+        lidar_config_.cone_height = lidar_config["cone_height"].as<double>();
+        
+        // ML Model Configuration
+        lidar_config_.num_bins = lidar_config["num_bins"].as<int>();
+        lidar_config_.feature_size = lidar_config["feature_size"].as<int>();
+        lidar_config_.z_min = lidar_config["z_min"].as<float>();
+        lidar_config_.z_max = lidar_config["z_max"].as<float>();
+        lidar_config_.bin_width = lidar_config["bin_width"].as<float>();
+        lidar_config_.confidence_threshold = lidar_config["confidence_threshold"].as<double>();
+        
+        // Cluster Filtering Parameters (Optimized from second code)
+        lidar_config_.min_cluster_height = lidar_config["min_cluster_height"].as<double>();
+        lidar_config_.max_cluster_height = lidar_config["max_cluster_height"].as<double>();
+        lidar_config_.max_cluster_width = lidar_config["max_cluster_width"].as<double>();
+        lidar_config_.min_cluster_points = lidar_config["min_cluster_points"].as<size_t>();
+        
+        // Orange Cone Detection
+        lidar_config_.orange_cone_distance_threshold = lidar_config["orange_cone_distance_threshold"].as<double>();
+        lidar_config_.orange_cone_min_points = lidar_config["orange_cone_min_points"].as<size_t>();
+        
+        // Visualization Control
+        lidar_config_.publish_cluster_centers = lidar_config["publish_cluster_centers"].as<bool>();
+        lidar_config_.publish_filtered_points = lidar_config["publish_filtered_points"].as<bool>();
+        
+        // ONNX Model Configuration
+        lidar_config_.onnx_model_paths.clear();
+        for (const auto& path : lidar_config["onnx_model_paths"]) {
+            lidar_config_.onnx_model_paths.push_back(path.as<std::string>());
+        }
+        lidar_config_.default_model_path = lidar_config["default_model_path"].as<std::string>();
+        
+        // Cone Detection Parameters
+        lidar_config_.cone_distance_x_min = lidar_config["cone_distance_x_min"].as<double>();
+        lidar_config_.cone_distance_x_max = lidar_config["cone_distance_x_max"].as<double>();
+        lidar_config_.intensity_threshold_blue = lidar_config["intensity_threshold_blue"].as<double>();
+        
+        // Cone Position Calculation Weights
+        lidar_config_.cone_position_w_median = lidar_config["cone_position_weights"]["w_median"].as<double>();
+        lidar_config_.cone_position_w_min_x = lidar_config["cone_position_weights"]["w_min_x"].as<double>();
+        lidar_config_.cone_position_w_min_y = lidar_config["cone_position_weights"]["w_min_y"].as<double>();
+        
+        // Heuristic Classifier Parameters
+        lidar_config_.moving_average_factor = lidar_config["heuristic_classifier"]["moving_average_factor"].as<double>();
+        lidar_config_.min_kernel_size = lidar_config["heuristic_classifier"]["min_kernel_size"].as<int>();
+        
+        RCLCPP_INFO(get_logger(), "LiDAR configuration loaded successfully from YAML");
+    }
+    catch (const std::exception& e) {
+        RCLCPP_FATAL(get_logger(), "Failed to load LiDAR configuration: %s", e.what());
+        rclcpp::shutdown();
+    }
+}
+
 void ProcessLidar::initializeComponents() {
     try {
-        ml_classifier_ = std::make_unique<ConeClassifier>(env_);
-        heuristic_classifier_ = std::make_unique<HeuristicClassifier>();
-        point_cloud_processor_ = std::make_unique<PointCloudProcessor>();
-        cluster_processor_ = std::make_unique<ClusterProcessor>();
+        ml_classifier_ = std::make_unique<ConeClassifier>(env_, lidar_config_);
+        heuristic_classifier_ = std::make_unique<HeuristicClassifier>(lidar_config_);
+        point_cloud_processor_ = std::make_unique<PointCloudProcessor>(lidar_config_);
+        cluster_processor_ = std::make_unique<ClusterProcessor>(lidar_config_);
         
         loadONNXModel();
         
@@ -961,23 +1054,22 @@ void ProcessLidar::loadONNXModel() {
         package_share_directory = ".";
     }
     
-    std::string model_path = package_share_directory + "/cone_model.onnx";
-    
-    // Comprehensive model path search with redundancy
-    std::vector<std::string> possible_paths = {
-        model_path,
-        package_share_directory + "/share/perception_winter/cone_model.onnx",
-        package_share_directory + "/cone_model.onnx", 
-        "./cone_model.onnx",
-        "/home/ishaan/Desktop/DebugFInal/install/perception_winter/share/perception_winter/cone_model.onnx"
-    };
-    
+    // Use the model paths from configuration
     bool model_found = false;
-    for (const auto& path : possible_paths) {
-        if (std::filesystem::exists(path)) {
-            model_path = path;
+    std::string model_path;
+    
+    for (const auto& search_path : lidar_config_.onnx_model_paths) {
+        // Replace package placeholder with actual path
+        std::string full_path = search_path;
+        size_t pos = full_path.find("${PACKAGE_SHARE_DIR}");
+        if (pos != std::string::npos) {
+            full_path.replace(pos, 21, package_share_directory);
+        }
+        
+        if (std::filesystem::exists(full_path)) {
+            model_path = full_path;
             model_found = true;
-            RCLCPP_INFO(get_logger(), "Found model at: %s", path.c_str());
+            RCLCPP_INFO(get_logger(), "Found model at: %s", full_path.c_str());
             break;
         }
     }
@@ -1046,10 +1138,6 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
         RCLCPP_INFO(get_logger(), "=== STARTING PROCESSING PIPELINE ===");
         RCLCPP_INFO(get_logger(), "Input points: %zu", points.size());
 
-        // Get visualization control parameters
-        publish_cluster_centers_ = this->get_parameter("publish_cluster_centers").as_bool();
-        publish_filtered_points_ = this->get_parameter("publish_filtered_points").as_bool();
-
         // Stage 1: Point Cloud Filtering
         auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         if (!point_cloud_processor_->filterCarBodyAndROI(points, cloud, get_logger())) {
@@ -1068,10 +1156,10 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
         auto clusters = cluster_processor_->clusterPoints(cloud_filtered, get_logger());
         if (clusters.empty()) {
             RCLCPP_WARN(get_logger(), "Stage 3 failed: No clusters found");
-            if (publish_filtered_points_) {
+            if (lidar_config_.publish_filtered_points) {
                 publishConeClusterPoints(clusters);
             }
-            if (publish_cluster_centers_) {
+            if (lidar_config_.publish_cluster_centers) {
                 publishClusterCenters(clusters);
             }
             return true; // No clusters is not necessarily a failure
@@ -1082,7 +1170,7 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
         auto filtered_clusters = cluster_processor_->filterClustersBySize(clusters, orange_candidates, get_logger());
 
         // Publish cluster centers for visualization (before color classification)
-        if (publish_cluster_centers_) {
+        if (lidar_config_.publish_cluster_centers) {
             publishClusterCenters(filtered_clusters);
         }
 
@@ -1104,7 +1192,7 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
         
         // Always publish clustered points for visualization if enabled
         // This is crucial for the FilteredPointsVisualNode to work
-        if (publish_filtered_points_) {
+        if (lidar_config_.publish_filtered_points) {
             publishConeClusterPoints(clusters);
         }
 
@@ -1129,8 +1217,8 @@ void ProcessLidar::publishDetectedCones(const std::vector<Point3D>& positions, c
         double y = positions[i][1];
         double z = positions[i][2];
 
-        // Distance and angle validation
-        if (x < 3.35 || x > 12) continue;
+        // Distance and angle validation using config values
+        if (x < lidar_config_.cone_distance_x_min || x > lidar_config_.cone_distance_x_max) continue;
         
         double range = sqrt(x * x + y * y);
         double angle = atan2(y, x);

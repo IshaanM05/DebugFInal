@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "lidar_clusters_visualizer_node"
+			"path" : "filtered_points_node"
 		}
 	],
 	"backtrace" : 1,
@@ -74,19 +74,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 58,
+				"line" : 55,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 120,
+				"line" : 125,
 				"parent" : 0
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 108,
+				"line" : 101,
 				"parent" : 0
 			},
 			{
@@ -628,7 +628,7 @@
 			{
 				"command" : 8,
 				"file" : 0,
-				"line" : 111,
+				"line" : 104,
 				"parent" : 0
 			},
 			{
@@ -839,7 +839,7 @@
 			]
 		}
 	],
-	"id" : "lidar_clusters_visualizer_node::@6890427a1f51a3e7e1df",
+	"id" : "filtered_points_node::@6890427a1f51a3e7e1df",
 	"install" : 
 	{
 		"destinations" : 
@@ -1300,8 +1300,8 @@
 		],
 		"language" : "CXX"
 	},
-	"name" : "lidar_clusters_visualizer_node",
-	"nameOnDisk" : "lidar_clusters_visualizer_node",
+	"name" : "filtered_points_node",
+	"nameOnDisk" : "filtered_points_node",
 	"paths" : 
 	{
 		"build" : ".",
@@ -1323,13 +1323,13 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "src/lidar_clusters_visualizer.cpp",
+			"path" : "src/filtered_points_visual_node.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "src/lidar_clusters_visualizer_main.cpp",
+			"path" : "src/filtered_points_visual_main.cpp",
 			"sourceGroupIndex" : 0
 		}
 	],
