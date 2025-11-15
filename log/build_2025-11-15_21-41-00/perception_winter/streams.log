@@ -1,0 +1,190 @@
+[0.007s] Invoking command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake /home/ishaan/Desktop/DebugFInal/src/perception_winter -DCMAKE_INSTALL_PREFIX=/home/ishaan/Desktop/DebugFInal/install/perception_winter
+[0.053s] [0mCMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+[0.054s]   Compatibility with CMake < 3.10 will be removed from a future version of
+[0.054s]   CMake.
+[0.054s] 
+[0.054s]   Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+[0.054s]   to tell CMake that the project requires at least <min> but has been updated
+[0.054s]   to work with policies introduced by <max> or earlier.
+[0.054s] 
+[0.054s] [0m
+[0.112s] -- The C compiler identification is GNU 11.4.0
+[0.190s] -- The CXX compiler identification is GNU 11.4.0
+[0.203s] -- Detecting C compiler ABI info
+[0.256s] -- Detecting C compiler ABI info - done
+[0.269s] -- Check for working C compiler: /usr/lib/ccache/gcc - skipped
+[0.269s] -- Detecting C compile features
+[0.270s] -- Detecting C compile features - done
+[0.286s] -- Detecting CXX compiler ABI info
+[0.339s] -- Detecting CXX compiler ABI info - done
+[0.362s] -- Check for working CXX compiler: /usr/lib/ccache/g++ - skipped
+[0.363s] -- Detecting CXX compile features
+[0.364s] -- Detecting CXX compile features - done
+[0.376s] -- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.530s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter
+[0.592s] -- Found rclcpp: 16.0.15 (/opt/ros/humble/share/rclcpp/cmake)
+[0.628s] -- Found rosidl_generator_c: 3.1.7 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.631s] -- Found rosidl_adapter: 3.1.7 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.638s] -- Found rosidl_generator_cpp: 3.1.7 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.647s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.660s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.697s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.700s] -- Found rmw_cyclonedds_cpp: 1.3.4 (/opt/ros/humble/share/rmw_cyclonedds_cpp/cmake)
+[0.719s] -- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+[0.726s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[0.803s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[0.805s] -- Found Threads: TRUE
+[0.863s] -- Found sensor_msgs: 4.9.0 (/opt/ros/humble/share/sensor_msgs/cmake)
+[0.889s] -- Found visualization_msgs: 4.9.0 (/opt/ros/humble/share/visualization_msgs/cmake)
+[0.907s] -- Found pcl_conversions: 2.4.5 (/opt/ros/humble/share/pcl_conversions/cmake)
+[0.936s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:146 (find_package):
+[0.936s]   Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
+[0.936s]   variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
+[0.936s]   cmake_policy command to set the policy and suppress this warning.
+[0.936s] 
+[0.936s]   CMake variable EIGEN_ROOT is set to:
+[0.936s] 
+[0.936s]     /usr/include/eigen3
+[0.936s] 
+[0.936s]   For compatibility, find_package is ignoring the variable, but code in a
+[0.936s]   .cmake module might still use it.
+[0.936s] Call Stack (most recent call first):
+[0.936s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:299 (find_eigen)
+[0.936s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[0.936s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.936s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[0.936s]   CMakeLists.txt:22 (find_package)
+[0.936s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[0.936s] [0m
+[0.940s] -- Checking for module 'eigen3'
+[0.950s] --   Found eigen3, version 3.4.0
+[0.988s] -- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1")
+[0.988s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[0.988s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
+[0.989s]   Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+[0.989s]   --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+[0.989s]   set the policy and suppress this warning.
+[0.989s] 
+[0.989s] Call Stack (most recent call first):
+[0.989s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
+[0.989s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[0.989s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.989s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[0.989s]   CMakeLists.txt:22 (find_package)
+[0.989s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[0.989s] [0m
+[1.023s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/Modules/FindFLANN.cmake:44 (find_package):
+[1.023s]   Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
+[1.023s]   variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
+[1.023s]   cmake_policy command to set the policy and suppress this warning.
+[1.023s] 
+[1.023s]   CMake variable FLANN_ROOT is set to:
+[1.023s] 
+[1.023s]     /usr
+[1.023s] 
+[1.023s]   For compatibility, find_package is ignoring the variable, but code in a
+[1.023s]   .cmake module might still use it.
+[1.023s] Call Stack (most recent call first):
+[1.023s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:256 (find_package)
+[1.023s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:301 (find_flann)
+[1.023s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[1.023s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[1.023s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[1.023s]   CMakeLists.txt:22 (find_package)
+[1.023s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[1.023s] [0m
+[1.032s] -- Checking for module 'flann'
+[1.041s] --   Found flann, version 1.9.1
+[1.105s] -- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so
+[1.105s] -- FLANN found (include: /usr/include, lib: /usr/lib/x86_64-linux-gnu/libflann_cpp.so)
+[2.249s] -- Checking for module 'libusb-1.0'
+[2.268s] --   Found libusb-1.0, version 1.0.25
+[2.315s] -- Found libusb: /usr/lib/x86_64-linux-gnu/libusb-1.0.so
+[2.317s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.392s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.550s] [33mCMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
+[2.550s]   Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+[2.550s]   --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+[2.550s]   set the policy and suppress this warning.
+[2.550s] 
+[2.551s] Call Stack (most recent call first):
+[2.551s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
+[2.551s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[2.551s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[2.551s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[2.551s]   CMakeLists.txt:22 (find_package)
+[2.551s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[2.551s] [0m
+[2.557s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[2.562s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.567s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.739s] -- Found Qhull version 8.0.2
+[2.918s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[3.105s] -- Found PCL_COMMON: /usr/lib/x86_64-linux-gnu/libpcl_common.so
+[3.106s] -- Found PCL_KDTREE: /usr/lib/x86_64-linux-gnu/libpcl_kdtree.so
+[3.107s] -- Found PCL_OCTREE: /usr/lib/x86_64-linux-gnu/libpcl_octree.so
+[3.108s] -- Found PCL_SEARCH: /usr/lib/x86_64-linux-gnu/libpcl_search.so
+[3.109s] -- Found PCL_SAMPLE_CONSENSUS: /usr/lib/x86_64-linux-gnu/libpcl_sample_consensus.so
+[3.110s] -- Found PCL_FILTERS: /usr/lib/x86_64-linux-gnu/libpcl_filters.so
+[3.110s] -- Found PCL_2D: /usr/include/pcl-1.12
+[3.110s] -- Found PCL_GEOMETRY: /usr/include/pcl-1.12
+[3.111s] -- Found PCL_IO: /usr/lib/x86_64-linux-gnu/libpcl_io.so
+[3.112s] -- Found PCL_FEATURES: /usr/lib/x86_64-linux-gnu/libpcl_features.so
+[3.113s] -- Found PCL_ML: /usr/lib/x86_64-linux-gnu/libpcl_ml.so
+[3.114s] -- Found PCL_SEGMENTATION: /usr/lib/x86_64-linux-gnu/libpcl_segmentation.so
+[3.115s] -- Found PCL_VISUALIZATION: /usr/lib/x86_64-linux-gnu/libpcl_visualization.so
+[3.116s] -- Found PCL_SURFACE: /usr/lib/x86_64-linux-gnu/libpcl_surface.so
+[3.117s] -- Found PCL_REGISTRATION: /usr/lib/x86_64-linux-gnu/libpcl_registration.so
+[3.118s] -- Found PCL_KEYPOINTS: /usr/lib/x86_64-linux-gnu/libpcl_keypoints.so
+[3.119s] -- Found PCL_TRACKING: /usr/lib/x86_64-linux-gnu/libpcl_tracking.so
+[3.120s] -- Found PCL_RECOGNITION: /usr/lib/x86_64-linux-gnu/libpcl_recognition.so
+[3.121s] -- Found PCL_STEREO: /usr/lib/x86_64-linux-gnu/libpcl_stereo.so
+[3.122s] -- Found PCL_APPS: /usr/lib/x86_64-linux-gnu/libpcl_apps.so
+[3.123s] -- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.12
+[3.123s] -- Found PCL_MODELER: /usr/include/pcl-1.12
+[3.123s] -- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.12
+[3.125s] -- Found PCL_OUTOFCORE: /usr/lib/x86_64-linux-gnu/libpcl_outofcore.so
+[3.126s] -- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so
+[3.128s] -- Found dv_msgs: 0.0.0 (/home/ishaan/IITBDV-msgs/install/dv_msgs/share/dv_msgs/cmake)
+[3.155s] -- Found Open3D: /usr/lib/x86_64-linux-gnu/cmake/Open3D/Open3DConfig.cmake (found version "0.14.1")
+[3.155s] [33mCMake Warning (dev) at CMakeLists.txt:35 (find_package):
+[3.155s]   Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
+[3.155s]   Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
+[3.155s]   command to set the policy and suppress this warning.
+[3.155s] 
+[3.156s]   CMake variable PCL_ROOT is set to:
+[3.156s] 
+[3.156s]     /usr
+[3.156s] 
+[3.156s]   For compatibility, CMake is ignoring the variable.
+[3.156s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[3.156s] [0m
+[3.160s] -- Enhanced ground removal using sequential processing (TBB disabled in code)
+[3.160s] -- Using ONNX Runtime from: /usr/local/onnxruntime-linux-x64-1.17.1
+[3.217s] -- Configuring done (3.2s)
+[3.245s] -- Generating done (0.0s)
+[3.250s] -- Build files have been written to: /home/ishaan/Desktop/DebugFInal/build/perception_winter
+[3.260s] Invoked command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake /home/ishaan/Desktop/DebugFInal/src/perception_winter -DCMAKE_INSTALL_PREFIX=/home/ishaan/Desktop/DebugFInal/install/perception_winter
+[3.262s] Invoking command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --build /home/ishaan/Desktop/DebugFInal/build/perception_winter -- -j32 -l32
+[3.334s] [  8%] [32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_node.cpp.o[0m
+[3.334s] [ 16%] [32mBuilding CXX object CMakeFiles/filtered_points_node.dir/src/filtered_points_visual_main.cpp.o[0m
+[3.335s] [ 25%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/cone_seen_visual_node.cpp.o[0m
+[3.335s] [ 33%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o[0m
+[3.335s] [ 41%] [32mBuilding CXX object CMakeFiles/cone_visualizer_node.dir/src/main_1.cpp.o[0m
+[3.335s] [ 50%] [32mBuilding CXX object CMakeFiles/process_lidar_node.dir/src/main.cpp.o[0m
+[3.336s] [ 66%] [32mBuilding CXX object CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer_main.cpp.o[0m
+[3.336s] [ 58%] [32mBuilding CXX object CMakeFiles/lidar_clusters_visualizer_node.dir/src/lidar_clusters_visualizer.cpp.o[0m
+[3.474s] [ 75%] [1m[32mLinking CXX executable filtered_points_node[0m
+[3.502s] [ 83%] [1m[32mLinking CXX executable cone_visualizer_node[0m
+[3.503s] [ 91%] [1m[32mLinking CXX executable lidar_clusters_visualizer_node[0m
+[3.706s] [ 91%] [0mBuilt target filtered_points_node[0m
+[3.732s] [ 91%] [0mBuilt target lidar_clusters_visualizer_node[0m
+[3.742s] [ 91%] [0mBuilt target cone_visualizer_node[0m
+[12.049s] [01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:[m[K In static member function ‘[01m[Kstatic std::vector<std::array<double, 4> > perception_winter::PointCloudExtractor::fromPointCloud2(sensor_msgs::msg::PointCloud2_<std::allocator<void> >::SharedPtr)[m[K’:
+[12.049s] [01m[K/home/ishaan/Desktop/DebugFInal/src/perception_winter/src/process_lidar.cpp:1265:5:[m[K [01;31m[Kerror: [m[K‘[01m[Kpcl_conversions[m[K’ has not been declared
+[12.049s]  1265 |     [01;31m[Kpcl_conversions[m[K::toPCL(*cloud_msg, pcl_pc2);
+[12.049s]       |     [01;31m[K^~~~~~~~~~~~~~~[m[K
+[12.050s] gmake[2]: *** [CMakeFiles/process_lidar_node.dir/build.make:79: CMakeFiles/process_lidar_node.dir/src/process_lidar.cpp.o] Error 1
+[12.050s] gmake[1]: *** [CMakeFiles/Makefile2:162: CMakeFiles/process_lidar_node.dir/all] Error 2
+[12.050s] gmake: *** [Makefile:146: all] Error 2
+[12.052s] Invoked command in '/home/ishaan/Desktop/DebugFInal/build/perception_winter' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/ishaan/eufs_ws/install/eufs_launcher:/home/ishaan/eufs_ws/install/eufs_tracks:/home/ishaan/eufs_ws/install/eufs_rqt:/home/ishaan/eufs_ws/install/eufs_racecar:/opt/ros/humble _=/usr/bin/env /home/ishaan/.local/bin/cmake --build /home/ishaan/Desktop/DebugFInal/build/perception_winter -- -j32 -l32

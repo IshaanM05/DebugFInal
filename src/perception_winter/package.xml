@@ -24,6 +24,12 @@
   <depend>libeigen3-dev</depend>
   <depend>libpcl-dev</depend>
 
+  <!-- PCL components you're using -->
+  <depend>libpcl-common-dev</depend>
+  <depend>libpcl-io-dev</depend>
+  <depend>libpcl-filters-dev</depend>
+  <depend>libpcl-segmentation-dev</depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

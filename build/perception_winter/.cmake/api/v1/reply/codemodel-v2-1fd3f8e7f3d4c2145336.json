@@ -1,0 +1,106 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-8f6fa7a490371638a519.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "perception_winter",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "cone_visualizer_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-cone_visualizer_node-b625bc60ce7f14ed93a7.json",
+					"name" : "cone_visualizer_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "filtered_points_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-filtered_points_node-56495e29289a72c7dd70.json",
+					"name" : "filtered_points_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "lidar_clusters_visualizer_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-lidar_clusters_visualizer_node-0195ba5f9c76f4f0d189.json",
+					"name" : "lidar_clusters_visualizer_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "perception_winter_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-perception_winter_uninstall-c43239413f633a2e06b0.json",
+					"name" : "perception_winter_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "process_lidar_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-process_lidar_node-db3d4571039351bbc6d4.json",
+					"name" : "process_lidar_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-c3707394cc87c939a041.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ishaan/Desktop/DebugFInal/build/perception_winter",
+		"source" : "/home/ishaan/Desktop/DebugFInal/src/perception_winter"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 8
+	}
+}

@@ -9,14 +9,20 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/filters/voxel_grid.h>
 #include <chrono>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <filesystem>
 #include <chrono>
 #include <atomic>
 #include <yaml-cpp/yaml.h>
+#include <unordered_map>
 
 using namespace perception_winter;
+
+// =============================================
+// GLOBAL METRICS (PRESERVED)
+// =============================================
 
 static std::atomic<long long> g_true_positives_blue{0};
 static std::atomic<long long> g_true_positives_yellow{0};
@@ -24,6 +30,492 @@ static std::atomic<long long> g_false_positives_blue{0};     // Predicted Blue, 
 static std::atomic<long long> g_false_positives_yellow{0};   // Predicted Yellow, but was Blue
 static std::atomic<long long> g_rejected_as_blue{0};       // Was Blue, but rejected
 static std::atomic<long long> g_rejected_as_yellow{0};     // Was Yellow, but rejected
+
+// =============================================
+// ENHANCED GROUND REMOVAL IMPLEMENTATION
+// =============================================
+
+MultiStageGroundRemover::MultiStageGroundRemover(const LidarConfig& config) 
+    : config_(config) {}
+
+std::vector<Point4D> MultiStageGroundRemover::removeGround(const std::vector<Point4D>& points, 
+                                                          rclcpp::Logger logger) {
+    auto start_time = std::chrono::high_resolution_clock::now();
+    
+    RCLCPP_DEBUG(logger, "Starting multi-stage ground removal with %zu points", points.size());
+    
+    try {
+        // Stage 1: Preprocessing
+        auto preprocessed = preprocessPoints(points);
+        auto t1 = std::chrono::high_resolution_clock::now();
+        
+        // Stage 2: Hybrid Plane Fitting
+        auto plane_ground = fitGroundPlanesHybrid(preprocessed);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        
+        // Stage 3: Elevation Grid Filtering
+        auto grid_ground = filterByElevationGrid(preprocessed);
+        auto t3 = std::chrono::high_resolution_clock::now();
+        
+        // Combine ground points from all methods
+        std::vector<Point4D> all_ground_points;
+        all_ground_points.insert(all_ground_points.end(), plane_ground.begin(), plane_ground.end());
+        all_ground_points.insert(all_ground_points.end(), grid_ground.begin(), grid_ground.end());
+        
+        // Remove duplicates
+        std::sort(all_ground_points.begin(), all_ground_points.end());
+        auto last = std::unique(all_ground_points.begin(), all_ground_points.end());
+        all_ground_points.erase(last, all_ground_points.end());
+        
+        // Remove ground points to get initial non-ground
+        std::vector<Point4D> initial_non_ground;
+        std::copy_if(preprocessed.begin(), preprocessed.end(), 
+                    std::back_inserter(initial_non_ground),
+                    [&](const Point4D& point) {
+                        return std::find(all_ground_points.begin(), all_ground_points.end(), point) == all_ground_points.end();
+                    });
+        
+        // Stage 4: Cone Base Restoration
+        auto final_non_ground = restoreConeBases(initial_non_ground, all_ground_points, preprocessed);
+        auto t4 = std::chrono::high_resolution_clock::now();
+        
+        // Performance logging
+        auto total_duration = std::chrono::duration_cast<std::chrono::microseconds>(t4 - start_time);
+        auto preprocess_time = std::chrono::duration_cast<std::chrono::microseconds>(t1 - start_time);
+        auto plane_time = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1);
+        auto grid_time = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2);
+        auto restoration_time = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3);
+        
+        RCLCPP_DEBUG(logger, 
+                    "Multi-stage ground removal completed in %ld μs (preprocess: %ld, plane: %ld, grid: %ld, restoration: %ld)",
+                    total_duration.count(), preprocess_time.count(), plane_time.count(), grid_time.count(), restoration_time.count());
+        RCLCPP_DEBUG(logger, "Ground removal: %zu -> %zu points (%zu ground removed)",
+                    points.size(), final_non_ground.size(), all_ground_points.size());
+        
+        return final_non_ground;
+    }
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(logger, "Multi-stage ground removal failed: %s", e.what());
+        return points; // Fallback: return all points as non-ground
+    }
+}
+
+std::vector<Point4D> MultiStageGroundRemover::preprocessPoints(const std::vector<Point4D>& points) {
+    // Voxel downsampling for density normalization
+    std::unordered_map<std::string, Point4D> voxel_map;
+    double voxel_size = config_.ground_removal.voxel_downsample_size;
+    
+    for (const auto& point : points) {
+        int voxel_x = static_cast<int>(point[0] / voxel_size);
+        int voxel_y = static_cast<int>(point[1] / voxel_size);
+        int voxel_z = static_cast<int>(point[2] / voxel_size);
+        
+        std::string key = std::to_string(voxel_x) + "_" + std::to_string(voxel_y) + "_" + std::to_string(voxel_z);
+        
+        if (!voxel_map.count(key) || point[3] > voxel_map[key][3]) {
+            voxel_map[key] = point; // Keep point with highest intensity in each voxel
+        }
+    }
+    
+    std::vector<Point4D> downsampled;
+    downsampled.reserve(voxel_map.size());
+    for (const auto& [key, point] : voxel_map) {
+        downsampled.push_back(point);
+    }
+    
+    // Apply single-axis ground smoothing
+    return singleAxisGroundSmoothing(downsampled);
+}
+
+std::vector<Point4D> MultiStageGroundRemover::singleAxisGroundSmoothing(const std::vector<Point4D>& points) {
+    struct GridKey {
+        int x, y;
+        bool operator==(const GridKey& other) const { return x == other.x && y == other.y; }
+    };
+    
+    struct GridKeyHash {
+        std::size_t operator()(const GridKey& k) const { return std::hash<int>()(k.x) ^ (std::hash<int>()(k.y) << 1); }
+    };
+    
+    std::unordered_map<GridKey, double, GridKeyHash> min_height_per_cell;
+    double cell_size = config_.ground_removal.single_axis_smoothing_cell_size;
+    
+    // Find minimum height per grid cell
+    for (const auto& point : points) {
+        GridKey key = {static_cast<int>(point[0] / cell_size), static_cast<int>(point[1] / cell_size)};
+        if (!min_height_per_cell.count(key) || point[2] < min_height_per_cell[key]) {
+            min_height_per_cell[key] = point[2];
+        }
+    }
+    
+    // Keep only points close to the minimum height (ground points)
+    std::vector<Point4D> smoothed;
+    double ground_threshold = config_.ground_removal.ground_smoothing_threshold;
+    
+    for (const auto& point : points) {
+        GridKey key = {static_cast<int>(point[0] / cell_size), static_cast<int>(point[1] / cell_size)};
+        if (min_height_per_cell.count(key) && 
+            point[2] - min_height_per_cell[key] < ground_threshold) {
+            smoothed.push_back(point);
+        }
+    }
+    
+    return smoothed;
+}
+
+std::vector<Point4D> MultiStageGroundRemover::fitGroundPlanesHybrid(const std::vector<Point4D>& points) {
+    std::vector<Point4D> all_ground_points;
+    
+    // Run both methods sequentially (TBB removed for compatibility)
+    auto angular_ground = fitAngularSectors(points);
+    auto zonal_ground = fitZonalPCA(points);
+    
+    all_ground_points.insert(all_ground_points.end(), angular_ground.begin(), angular_ground.end());
+    all_ground_points.insert(all_ground_points.end(), zonal_ground.begin(), zonal_ground.end());
+    
+    return all_ground_points;
+}
+
+std::vector<Point4D> MultiStageGroundRemover::fitAngularSectors(const std::vector<Point4D>& points) {
+    const int num_sectors = config_.ground_removal.num_angular_sectors;
+    std::vector<std::vector<Point4D>> sector_points(num_sectors);
+    std::vector<PlaneModel> sector_planes(num_sectors);
+    
+    // Distribute points to angular sectors
+    for (const auto& point : points) {
+        double angle = std::atan2(point[1], point[0]); // -π to π
+        int sector = static_cast<int>((angle + M_PI) / (2 * M_PI) * num_sectors);
+        sector = std::clamp(sector, 0, num_sectors - 1);
+        sector_points[sector].push_back(point);
+    }
+    
+    // Sequential plane fitting per sector (TBB parallel_for replaced)
+    for (int sector = 0; sector < num_sectors; ++sector) {
+        if (static_cast<int>(sector_points[sector].size()) >= config_.ground_removal.min_points_per_sector) {
+            sector_planes[sector] = fitPlaneToLowestPoints(sector_points[sector]);
+        }
+    }
+    
+    // Collect ground points from all sectors
+    std::vector<Point4D> ground_points;
+    for (int sector = 0; sector < num_sectors; ++sector) {
+        ground_points.insert(ground_points.end(),
+                           sector_planes[sector].inliers.begin(),
+                           sector_planes[sector].inliers.end());
+    }
+    
+    return ground_points;
+}
+
+std::vector<Point4D> MultiStageGroundRemover::fitZonalPCA(const std::vector<Point4D>& points) {
+    const auto& rings = config_.ground_removal.concentric_rings;
+    const int segments_per_ring = config_.ground_removal.segments_per_ring;
+    const int total_zones = rings.size() * segments_per_ring;
+    
+    std::vector<PlaneModel> zone_planes(total_zones);
+    
+    // Sequential processing (TBB parallel_for replaced)
+    for (int ring_idx = 0; ring_idx < static_cast<int>(rings.size()); ++ring_idx) {
+        auto [ring_min, ring_max] = rings[ring_idx];
+        
+        for (int segment = 0; segment < segments_per_ring; ++segment) {
+            double angle_start = (2 * M_PI / segments_per_ring) * segment;
+            double angle_end = (2 * M_PI / segments_per_ring) * (segment + 1);
+            
+            // Extract points in this zone
+            std::vector<Point4D> zone_points;
+            for (const auto& point : points) {
+                double distance = std::hypot(point[0], point[1]);
+                double angle = std::atan2(point[1], point[0]);
+                if (angle < 0) angle += 2 * M_PI; // Normalize to [0, 2π]
+                
+                if (distance >= ring_min && distance < ring_max &&
+                    angle >= angle_start && angle < angle_end) {
+                    zone_points.push_back(point);
+                }
+            }
+            
+            if (static_cast<int>(zone_points.size()) >= config_.ground_removal.min_points_per_zone) {
+                int zone_idx = ring_idx * segments_per_ring + segment;
+                zone_planes[zone_idx] = fitPlaneToLowestPoints(zone_points);
+            }
+        }
+    }
+    
+    // Merge ground points from all zones
+    std::vector<Point4D> ground_points;
+    for (const auto& plane : zone_planes) {
+        ground_points.insert(ground_points.end(),
+                           plane.inliers.begin(), plane.inliers.end());
+    }
+    
+    return ground_points;
+}
+
+MultiStageGroundRemover::PlaneModel MultiStageGroundRemover::fitPlaneToLowestPoints(const std::vector<Point4D>& points) {
+    // Take lowest points for ground plane fitting
+    auto sorted_points = points;
+    std::sort(sorted_points.begin(), sorted_points.end(),
+             [](const Point4D& a, const Point4D& b) { return a[2] < b[2]; });
+    
+    int num_lowest = std::max(config_.ground_removal.min_points_per_sector, 
+                             (int)(sorted_points.size() * config_.ground_removal.lowest_points_ratio));
+    std::vector<Point4D> lowest_points(sorted_points.begin(), 
+                                      sorted_points.begin() + num_lowest);
+    
+    // Fit plane using PCA
+    Eigen::MatrixXd points_matrix(num_lowest, 3);
+    for (int i = 0; i < num_lowest; ++i) {
+        points_matrix(i, 0) = lowest_points[i][0];
+        points_matrix(i, 1) = lowest_points[i][1];
+        points_matrix(i, 2) = lowest_points[i][2];
+    }
+    
+    Eigen::Vector3d centroid = points_matrix.colwise().mean();
+    Eigen::MatrixXd centered = points_matrix.rowwise() - centroid.transpose();
+    Eigen::Matrix3d cov = centered.transpose() * centered;
+    
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eig(cov);
+    Eigen::Vector3d normal = eig.eigenvectors().col(0); // Smallest eigenvalue
+    
+    // Ensure normal points upward
+    if (normal.z() < 0) normal = -normal;
+    
+    double d = -normal.dot(centroid);
+    
+    // Find inliers within adaptive threshold
+    double threshold = computeAdaptiveThreshold(lowest_points);
+    std::vector<Point4D> inliers;
+    
+    for (const auto& point : points) {
+        Eigen::Vector3d pt(point[0], point[1], point[2]);
+        double distance = std::abs(normal.dot(pt) + d);
+        if (distance < threshold) {
+            inliers.push_back(point);
+        }
+    }
+    
+    return {normal, d, inliers};
+}
+
+double MultiStageGroundRemover::computeAdaptiveThreshold(const std::vector<Point4D>& points) {
+    // Adaptive threshold based on point density and distribution
+    if (points.empty()) return 0.02; // Default 2cm
+    
+    double avg_distance = 0.0;
+    int count = 0;
+    
+    for (size_t i = 0; i < points.size(); ++i) {
+        for (size_t j = i + 1; j < std::min(i + 10, points.size()); ++j) {
+            double dx = points[i][0] - points[j][0];
+            double dy = points[i][1] - points[j][1];
+            double dz = points[i][2] - points[j][2];
+            avg_distance += std::sqrt(dx*dx + dy*dy + dz*dz);
+            count++;
+        }
+    }
+    
+    if (count > 0) {
+        avg_distance /= count;
+        return std::clamp(avg_distance * 0.5, 0.01, 0.05); // 1-5cm threshold
+    }
+    
+    return 0.02;
+}
+
+std::vector<Point4D> MultiStageGroundRemover::filterByElevationGrid(const std::vector<Point4D>& points) {
+    struct GridCell {
+        std::vector<double> heights;
+        double mean_height = 0.0;
+        double height_variance = 0.0;
+        bool is_ground = false;
+    };
+    
+    double cell_size = config_.ground_removal.grid_cell_size;
+    int grid_x = std::ceil(12.0 / cell_size);  // ROI x_max
+    int grid_y = std::ceil(7.0 / cell_size);   // ROI y_max - y_min
+    
+    std::vector<std::vector<GridCell>> grid(grid_x, std::vector<GridCell>(grid_y));
+    
+    // Populate grid with point heights
+    for (const auto& point : points) {
+        int x_idx = point[0] / cell_size;
+        int y_idx = (point[1] + 3.5) / cell_size; // Adjust for ROI y_min = -3.5
+        
+        if (x_idx >= 0 && x_idx < grid_x && y_idx >= 0 && y_idx < grid_y) {
+            grid[x_idx][y_idx].heights.push_back(point[2]);
+        }
+    }
+    
+    // Compute statistics and classify ground cells (sequential - TBB removed)
+    for (int x = 0; x < grid_x; ++x) {
+        for (int y = 0; y < grid_y; ++y) {
+            auto& cell = grid[x][y];
+            if (static_cast<int>(cell.heights.size()) >= config_.ground_removal.min_points_per_cell) {
+                // Compute mean
+                cell.mean_height = std::accumulate(cell.heights.begin(), cell.heights.end(), 0.0) 
+                                 / cell.heights.size();
+                
+                // Compute variance
+                double sum_sq = 0.0;
+                for (double h : cell.heights) {
+                    sum_sq += (h - cell.mean_height) * (h - cell.mean_height);
+                }
+                cell.height_variance = sum_sq / cell.heights.size();
+                
+                // Adaptive variance threshold based on distance
+                double distance = (x + 0.5) * cell_size;
+                double max_variance = config_.ground_removal.adaptive_variance_base + 
+                                    (distance / 12.0) * config_.ground_removal.adaptive_variance_scale;
+                
+                cell.is_ground = (cell.height_variance < max_variance);
+            }
+        }
+    }
+    
+    // Extract ground points
+    std::vector<Point4D> ground_points;
+    for (const auto& point : points) {
+        int x_idx = point[0] / cell_size;
+        int y_idx = (point[1] + 3.5) / cell_size;
+        
+        if (x_idx >= 0 && x_idx < grid_x && y_idx >= 0 && y_idx < grid_y) {
+            const auto& cell = grid[x_idx][y_idx];
+            if (cell.is_ground && std::abs(point[2] - cell.mean_height) < 0.05) { // 5cm tolerance
+                ground_points.push_back(point);
+            }
+        }
+    }
+    
+    return ground_points;
+}
+
+std::vector<Point4D> MultiStageGroundRemover::restoreConeBases(const std::vector<Point4D>& non_ground_points,
+                                                              const std::vector<Point4D>& ground_points,
+                                                              const std::vector<Point4D>& all_points) {
+    (void)all_points; // Mark parameter as unused to suppress warning
+    
+    // Simple clustering for cone candidates (using your existing DBSCAN would be better)
+    std::vector<std::vector<Point4D>> cone_candidates;
+    double cluster_epsilon = 0.2; // Similar to your dbscan_epsilon
+    
+    // Simple distance-based clustering (replace with your DBSCAN for production)
+    std::vector<bool> processed(non_ground_points.size(), false);
+    for (size_t i = 0; i < non_ground_points.size(); ++i) {
+        if (processed[i]) continue;
+        
+        std::vector<Point4D> cluster;
+        std::vector<size_t> queue = {i};
+        processed[i] = true;
+        
+        while (!queue.empty()) {
+            size_t current = queue.back();
+            queue.pop_back();
+            cluster.push_back(non_ground_points[current]);
+            
+            for (size_t j = 0; j < non_ground_points.size(); ++j) {
+                if (!processed[j]) {
+                    double dx = non_ground_points[current][0] - non_ground_points[j][0];
+                    double dy = non_ground_points[current][1] - non_ground_points[j][1];
+                    double dz = non_ground_points[current][2] - non_ground_points[j][2];
+                    double distance = std::sqrt(dx*dx + dy*dy + dz*dz);
+                    
+                    if (distance < cluster_epsilon) {
+                        queue.push_back(j);
+                        processed[j] = true;
+                    }
+                }
+            }
+        }
+        
+        if (static_cast<int>(cluster.size()) >= config_.ground_removal.min_cone_cluster_points) {
+            cone_candidates.push_back(cluster);
+        }
+    }
+    
+    // Restore cone base points
+    std::vector<Point4D> restored_points = non_ground_points;
+    double cylinder_radius = config_.ground_removal.base_cylinder_radius;
+    double cylinder_height = config_.ground_removal.base_cylinder_height;
+    
+    for (const auto& cluster : cone_candidates) {
+        // Compute cluster centroid
+        Eigen::Vector3d centroid(0, 0, 0);
+        for (const auto& point : cluster) {
+            centroid += Eigen::Vector3d(point[0], point[1], point[2]);
+        }
+        centroid /= cluster.size();
+        
+        // Find ground points within the cylinder around cluster base
+        for (const auto& ground_point : ground_points) {
+            double dx = ground_point[0] - centroid.x();
+            double dy = ground_point[1] - centroid.y();
+            double horizontal_distance = std::sqrt(dx*dx + dy*dy);
+            
+            if (horizontal_distance < cylinder_radius && 
+                std::abs(ground_point[2] - centroid.z()) < cylinder_height/2) {
+                restored_points.push_back(ground_point);
+            }
+        }
+    }
+    
+    return restored_points;
+}
+
+// =============================================
+// ENHANCED POINT CLOUD PROCESSOR IMPLEMENTATION
+// =============================================
+
+EnhancedPointCloudProcessor::EnhancedPointCloudProcessor(const LidarConfig& config)
+    : PointCloudProcessor(config), ground_remover_(config) {}
+
+bool EnhancedPointCloudProcessor::removeGroundPlaneEnhanced(PointCloudPtr cloud,
+                                                           PointCloudPtr non_ground_cloud,
+                                                           rclcpp::Logger logger) {
+    if (cloud->empty()) {
+        RCLCPP_WARN(logger, "Empty cloud for enhanced ground removal");
+        return false;
+    }
+
+    RCLCPP_DEBUG(logger, "Starting enhanced ground removal with %zu points", cloud->size());
+
+    try {
+        // Convert to Point4D format
+        std::vector<Point4D> points;
+        points.reserve(cloud->size());
+        for (const auto& pcl_point : cloud->points) {
+            points.push_back({pcl_point.x, pcl_point.y, pcl_point.z, pcl_point.intensity});
+        }
+        
+        // Use multi-stage ground removal
+        auto non_ground_points = ground_remover_.removeGround(points, logger);
+        
+        // Convert back to PCL
+        non_ground_cloud->points.clear();
+        non_ground_cloud->points.reserve(non_ground_points.size());
+        
+        for (const auto& point : non_ground_points) {
+            pcl::PointXYZI pcl_point;
+            pcl_point.x = point[0];
+            pcl_point.y = point[1];
+            pcl_point.z = point[2];
+            pcl_point.intensity = point[3];
+            non_ground_cloud->points.push_back(pcl_point);
+        }
+        
+        RCLCPP_INFO(logger,
+                   "Enhanced ground removal: %zu -> %zu points (%zu ground points removed)",
+                   cloud->size(), non_ground_cloud->size(), points.size() - non_ground_points.size());
+        
+        return !non_ground_cloud->empty();
+    }
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(logger, "Enhanced ground removal failed: %s", e.what());
+        // Fallback to original RANSAC using temporary instance
+        PointCloudProcessor fallback_processor(config_);
+        return fallback_processor.removeGroundPlane(cloud, non_ground_cloud, logger);
+    }
+}
 
 // =============================================
 // ML CLASSIFIER IMPLEMENTATION
@@ -768,34 +1260,25 @@ std::vector<Point4D> PointCloudExtractor::fromPointCloud2(const sensor_msgs::msg
     std::vector<Point4D> points;
     points.reserve(cloud_msg->width * cloud_msg->height);
 
-    sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_msg, "x");
-    sensor_msgs::PointCloud2ConstIterator<float> iter_y(*cloud_msg, "y");
-    sensor_msgs::PointCloud2ConstIterator<float> iter_z(*cloud_msg, "z");
+    // Convert PointCloud2 to PCL format and then extract points (fixed implementation)
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl_conversions::toPCL(*cloud_msg, pcl_pc2);
     
-    bool has_intensity = false;
-    std::optional<sensor_msgs::PointCloud2ConstIterator<float>> iter_intensity;
-    
-    // Check for intensity field with redundancy
-    for (const auto& field : cloud_msg->fields) {
-        if (field.name == "intensity" || field.name == "intensities") {
-            has_intensity = true;
-            iter_intensity = sensor_msgs::PointCloud2ConstIterator<float>(*cloud_msg, field.name);
-            break;
-        }
-    }
+    pcl::PointCloud<pcl::PointXYZI> cloud;
+    pcl::fromPCLPointCloud2(pcl_pc2, cloud);
 
-    for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
-        double intensity = 0.0;
-        if (has_intensity && iter_intensity.has_value()) {
-            intensity = *(*iter_intensity);
-            ++(*iter_intensity);
-        }
-        points.push_back({*iter_x, *iter_y, *iter_z, intensity});
+    for (const auto& point : cloud.points) {
+        Point4D pcl_point;
+        pcl_point[0] = point.x;
+        pcl_point[1] = point.y;
+        pcl_point[2] = point.z;
+        pcl_point[3] = point.intensity;
+        points.push_back(pcl_point);
     }
 
     RCLCPP_INFO(rclcpp::get_logger("point_cloud_extractor"), 
-               "Extracted %zu points from PointCloud2 (has_intensity: %d)", 
-               points.size(), has_intensity);
+               "Extracted %zu points from PointCloud2", 
+               points.size());
 
     return points;
 }
@@ -863,7 +1346,8 @@ ProcessLidar::ProcessLidar() :
     filtered_points_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/filtered_points", 10);
     cluster_centers_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/perception/clusters", 10); // New publisher for cluster centers
 
-    RCLCPP_INFO(get_logger(), "=== MODULAR LIDAR PROCESSING NODE STARTED ===");
+    RCLCPP_INFO(get_logger(), "=== ENHANCED MODULAR LIDAR PROCESSING NODE STARTED ===");
+    RCLCPP_INFO(get_logger(), "Using multi-stage ground removal: %s", use_enhanced_ground_removal_ ? "ENABLED" : "DISABLED");
     RCLCPP_INFO(get_logger(), "Dual input topics: %s, %s", 
                 lidar_config_.lidar_raw_topic.c_str(), lidar_config_.lidar_raw_topic2.c_str());
     RCLCPP_INFO(get_logger(), "Output topic: /perception/cones");
@@ -1015,6 +1499,39 @@ void ProcessLidar::loadLidarConfig() {
         lidar_config_.moving_average_factor = lidar_config["heuristic_classifier"]["moving_average_factor"].as<double>();
         lidar_config_.min_kernel_size = lidar_config["heuristic_classifier"]["min_kernel_size"].as<int>();
         
+        // Enhanced ground removal parameters
+        if (lidar_config["ground_removal"]) {
+            auto ground_config = lidar_config["ground_removal"];
+            lidar_config_.ground_removal.voxel_downsample_size = ground_config["voxel_downsample_size"].as<double>();
+            lidar_config_.ground_removal.single_axis_smoothing_cell_size = ground_config["single_axis_smoothing_cell_size"].as<double>();
+            lidar_config_.ground_removal.ground_smoothing_threshold = ground_config["ground_smoothing_threshold"].as<double>();
+            lidar_config_.ground_removal.num_angular_sectors = ground_config["num_angular_sectors"].as<int>();
+            lidar_config_.ground_removal.min_points_per_sector = ground_config["min_points_per_sector"].as<int>();
+            lidar_config_.ground_removal.lowest_points_ratio = ground_config["lowest_points_ratio"].as<double>();
+            lidar_config_.ground_removal.segments_per_ring = ground_config["segments_per_ring"].as<int>();
+            lidar_config_.ground_removal.min_points_per_zone = ground_config["min_points_per_zone"].as<int>();
+            lidar_config_.ground_removal.grid_cell_size = ground_config["grid_cell_size"].as<double>();
+            lidar_config_.ground_removal.min_points_per_cell = ground_config["min_points_per_cell"].as<int>();
+            lidar_config_.ground_removal.adaptive_variance_base = ground_config["adaptive_variance_base"].as<double>();
+            lidar_config_.ground_removal.adaptive_variance_scale = ground_config["adaptive_variance_scale"].as<double>();
+            lidar_config_.ground_removal.base_cylinder_radius = ground_config["base_cylinder_radius"].as<double>();
+            lidar_config_.ground_removal.base_cylinder_height = ground_config["base_cylinder_height"].as<double>();
+            lidar_config_.ground_removal.min_cone_cluster_points = ground_config["min_cone_cluster_points"].as<int>();
+            lidar_config_.ground_removal.use_parallel_processing = ground_config["use_parallel_processing"].as<bool>();
+            lidar_config_.ground_removal.max_threads = ground_config["max_threads"].as<int>();
+            
+            // Load concentric rings
+            lidar_config_.ground_removal.concentric_rings.clear();
+            for (const auto& ring : ground_config["concentric_rings"]) {
+                lidar_config_.ground_removal.concentric_rings.push_back(
+                    {ring[0].as<double>(), ring[1].as<double>()});
+            }
+            
+            RCLCPP_INFO(get_logger(), "Enhanced ground removal parameters loaded successfully");
+        } else {
+            RCLCPP_WARN(get_logger(), "Enhanced ground removal parameters not found - using defaults");
+        }
+        
         RCLCPP_INFO(get_logger(), "LiDAR configuration loaded successfully from YAML");
     }
     catch (const std::exception& e) {
@@ -1028,12 +1545,23 @@ void ProcessLidar::initializeComponents() {
         ml_classifier_ = std::make_unique<ConeClassifier>(env_, lidar_config_);
         heuristic_classifier_ = std::make_unique<HeuristicClassifier>(lidar_config_);
         point_cloud_processor_ = std::make_unique<PointCloudProcessor>(lidar_config_);
+        
+        // Try to create enhanced processor, but handle potential failures
+        try {
+            enhanced_point_cloud_processor_ = std::make_unique<EnhancedPointCloudProcessor>(lidar_config_);
+        } catch (const std::exception& e) {
+            RCLCPP_WARN(get_logger(), "Enhanced ground removal unavailable: %s", e.what());
+            use_enhanced_ground_removal_ = false;
+        }
+        
         cluster_processor_ = std::make_unique<ClusterProcessor>(lidar_config_);
         
         loadONNXModel();
         
         if (validateComponents()) {
             RCLCPP_INFO(get_logger(), "All modular components initialized successfully");
+            RCLCPP_INFO(get_logger(), "Enhanced ground removal: %s", 
+                       use_enhanced_ground_removal_ ? "ENABLED" : "DISABLED");
         } else {
             RCLCPP_FATAL(get_logger(), "Component validation failed");
             rclcpp::shutdown();
@@ -1106,6 +1634,11 @@ bool ProcessLidar::validateComponents() const {
         all_valid = false;
     }
     
+    // Enhanced component is optional - just log warning (no assignment in const method)
+    if (!enhanced_point_cloud_processor_) {
+        RCLCPP_WARN(get_logger(), "Enhanced Point Cloud Processor component missing - using fallback");
+    }
+    
     return all_valid;
 }
 
@@ -1134,8 +1667,91 @@ void ProcessLidar::processPointCloudData(std::vector<Point4D>& points, const std
 }
 
 bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points) {
+    // Use enhanced pipeline if available, otherwise fallback to original
+    if (use_enhanced_ground_removal_ && enhanced_point_cloud_processor_) {
+        return executeEnhancedProcessingPipeline(points);
+    } else {
+        // Fallback to original pipeline
+        RCLCPP_WARN(get_logger(), "Using original ground removal pipeline (enhanced not available)");
+        return executeOriginalProcessingPipeline(points);
+    }
+}
+
+bool ProcessLidar::executeEnhancedProcessingPipeline(const std::vector<Point4D>& points) {
     try {
-        RCLCPP_INFO(get_logger(), "=== STARTING PROCESSING PIPELINE ===");
+        RCLCPP_INFO(get_logger(), "=== STARTING ENHANCED PROCESSING PIPELINE ===");
+        RCLCPP_INFO(get_logger(), "Input points: %zu", points.size());
+
+        // Stage 1: Point Cloud Filtering (ORIGINAL)
+        auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        if (!point_cloud_processor_->filterCarBodyAndROI(points, cloud, get_logger())) {
+            RCLCPP_WARN(get_logger(), "Stage 1 failed: No points after filtering");
+            return false;
+        }
+
+        // Stage 2: Enhanced Ground Removal (NEW)
+        auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        if (!enhanced_point_cloud_processor_->removeGroundPlaneEnhanced(cloud, cloud_filtered, get_logger())) {
+            RCLCPP_WARN(get_logger(), "Stage 2 failed: No points after enhanced ground removal");
+            return false;
+        }
+
+        // Stage 3: Clustering
+        auto clusters = cluster_processor_->clusterPoints(cloud_filtered, get_logger());
+        if (clusters.empty()) {
+            RCLCPP_WARN(get_logger(), "Stage 3 failed: No clusters found");
+            if (lidar_config_.publish_filtered_points) {
+                publishConeClusterPoints(clusters);
+            }
+            if (lidar_config_.publish_cluster_centers) {
+                publishClusterCenters(clusters);
+            }
+            return true; // No clusters is not necessarily a failure
+        }
+
+        // Stage 4: Cluster Filtering
+        std::vector<bool> orange_candidates;
+        auto filtered_clusters = cluster_processor_->filterClustersBySize(clusters, orange_candidates, get_logger());
+
+        // Publish cluster centers for visualization (before color classification)
+        if (lidar_config_.publish_cluster_centers) {
+            publishClusterCenters(filtered_clusters);
+        }
+
+        // Stage 5: Cone Detection
+        std::vector<Point3D> cone_positions;
+        std::vector<int> cone_colors;
+        
+        if (!filtered_clusters.empty()) {
+            cluster_processor_->detectConesInClusters(filtered_clusters, orange_candidates, 
+                                                     cone_positions, cone_colors,
+                                                     *ml_classifier_, *heuristic_classifier_, get_logger());
+
+            // Stage 6: Publish Results
+            publishDetectedCones(cone_positions, cone_colors);
+        } else {
+            RCLCPP_WARN(get_logger(), "Stage 5: No valid clusters after filtering");
+            publishDetectedCones({}, {});
+        }
+        
+        // Always publish clustered points for visualization if enabled
+        // This is crucial for the FilteredPointsVisualNode to work
+        if (lidar_config_.publish_filtered_points) {
+            publishConeClusterPoints(clusters);
+        }
+
+        RCLCPP_INFO(get_logger(), "=== ENHANCED PROCESSING PIPELINE COMPLETED SUCCESSFULLY ===");
+        return true;
+    }
+    catch (const std::exception& e) {
+        RCLCPP_ERROR(get_logger(), "Enhanced processing pipeline exception: %s", e.what());
+        return false;
+    }
+}
+
+bool ProcessLidar::executeOriginalProcessingPipeline(const std::vector<Point4D>& points) {
+    try {
+        RCLCPP_INFO(get_logger(), "=== STARTING ORIGINAL PROCESSING PIPELINE ===");
         RCLCPP_INFO(get_logger(), "Input points: %zu", points.size());
 
         // Stage 1: Point Cloud Filtering
@@ -1145,7 +1761,7 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
             return false;
         }
 
-        // Stage 2: Ground Removal
+        // Stage 2: Ground Removal (ORIGINAL RANSAC)
         auto cloud_filtered = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         if (!point_cloud_processor_->removeGroundPlane(cloud, cloud_filtered, get_logger())) {
             RCLCPP_WARN(get_logger(), "Stage 2 failed: No points after ground removal");
@@ -1196,11 +1812,11 @@ bool ProcessLidar::executeProcessingPipeline(const std::vector<Point4D>& points)
             publishConeClusterPoints(clusters);
         }
 
-        RCLCPP_INFO(get_logger(), "=== PROCESSING PIPELINE COMPLETED SUCCESSFULLY ===");
+        RCLCPP_INFO(get_logger(), "=== ORIGINAL PROCESSING PIPELINE COMPLETED SUCCESSFULLY ===");
         return true;
     }
     catch (const std::exception& e) {
-        RCLCPP_ERROR(get_logger(), "Processing pipeline exception: %s", e.what());
+        RCLCPP_ERROR(get_logger(), "Original processing pipeline exception: %s", e.what());
         return false;
     }
 }

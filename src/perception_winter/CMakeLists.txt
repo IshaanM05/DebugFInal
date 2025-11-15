@@ -9,6 +9,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# ABI compatibility settings for better library interoperability
+add_compile_definitions(BUILD_SHARED_LIBS=ON)
+add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=1)
+
+# --- Find ROS2 and other dependencies ---
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -17,6 +22,10 @@ find_package(std_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(dv_msgs REQUIRED)
 
+# Additional ROS2 packages needed for the C++ code
+find_package(ament_index_cpp REQUIRED)
+find_package(rcutils REQUIRED)
+
 # Find yaml-cpp for YAML configuration parsing
 find_package(yaml-cpp REQUIRED)
 
@@ -24,6 +33,10 @@ find_package(yaml-cpp REQUIRED)
 find_package(Open3D REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters segmentation)
+
+# TBB parallel processing disabled in code - using sequential implementation
+add_compile_definitions(HAVE_TBB=0)
+message(STATUS "Enhanced ground removal using sequential processing (TBB disabled in code)")
 
 # --- Manual ONNX Runtime Setup ---
 set(ONNXRUNTIME_DIR "/usr/local/onnxruntime-linux-x64-1.17.1")
@@ -66,7 +79,9 @@ add_executable(lidar_clusters_visualizer_node
 # --- Process Lidar Node ---
 ament_target_dependencies(process_lidar_node 
   rclcpp sensor_msgs visualization_msgs std_msgs pcl_conversions dv_msgs
+  ament_index_cpp rcutils  # ADD THESE
 )
+
 target_include_directories(process_lidar_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -74,16 +89,30 @@ target_include_directories(process_lidar_node PUBLIC
   ${Open3D_INCLUDE_DIRS}
   ${Eigen3_INCLUDE_DIRS}
   "${ONNXRUNTIME_DIR}/include"
-  ${yaml-cpp_INCLUDE_DIRS}  # Add yaml-cpp includes
+  ${yaml-cpp_INCLUDE_DIRS}
+  # Add these for ament_index_cpp and other ROS2 utilities
+  ${ament_index_cpp_INCLUDE_DIRS}
 )
+
 target_link_libraries(process_lidar_node
   ${ament_cmake_libraries}
   ${PCL_LIBRARIES}
   Open3D::Open3D 
   Eigen3::Eigen 
   ${ONNXRUNTIME_LIB}
-  yaml-cpp  # Link yaml-cpp library
+  yaml-cpp
+  ament_index_cpp::ament_index_cpp  # ADD THIS
+  rcutils::rcutils  # ADD THIS
 )
+
+# Add filesystem library for C++17 features (needed for std::filesystem)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9)
+    # GCC 9+ uses std::filesystem in libstdc++
+    target_link_libraries(process_lidar_node stdc++fs)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Clang may need c++fs
+    target_link_libraries(process_lidar_node c++fs)
+endif()
 
 # --- Cone Visualizer Node ---
 ament_target_dependencies(cone_visualizer_node 
@@ -137,9 +166,23 @@ install(DIRECTORY config/
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Install ONNX model file if it exists
 set(MODEL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cone_model.onnx")
 if(EXISTS ${MODEL_FILE})
   install(FILES ${MODEL_FILE} DESTINATION share/${PROJECT_NAME})
 endif()
 
+# --- Optional compiler optimizations for performance ---
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  message(STATUS "Release build detected - enabling optimizations for enhanced ground removal")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    target_compile_options(process_lidar_node PRIVATE -O3 -march=native -ffast-math)
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(process_lidar_node PRIVATE -O3 -march=native -ffast-math)
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_compile_options(process_lidar_node PRIVATE /O2 /fp:fast)
+  endif()
+endif()
+
+# Finalize the package configuration
 ament_package()
